@@ -1,4 +1,4 @@
-﻿ELTRACO (Ellard's track control system) 
+ELTRACO (Ellard's track control system) 
 
 constitutes a wireless model rail-road track control system to be used with “ROCRAIL™”.
 
@@ -45,3 +45,10 @@ Each decoder has its dedicated software package. After the initial installation,
 Each turnout decoder controls two turnouts. 
 Each sensor decoder accommodates eight digital and one analogue sensor.
 With each LED decoder eight individual LEDs can be switched on and off wireless by Rocrail.
+
+MORE INFORMATION
+
+Information on how to make the hardware and how to use the system with Rocrail is available on my user pages of the Rocrail Website.
+
+Ellard Postma
+September 2017
