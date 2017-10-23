@@ -1,0 +1,27 @@
+[Eagle]
+Version="08 02 02"
+Platform="Mac OS X"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+UsedLibraryUrn="urn:adsk.eagle:library:237"
+UsedLibraryUrn="urn:adsk.eagle:library:320"
+UsedLibraryUrn="urn:adsk.eagle:library:325"
+UsedLibraryUrn="urn:adsk.eagle:library:343"
+UsedLibraryUrn="urn:adsk.eagle:library:347"
+UsedLibraryUrn="urn:adsk.eagle:library:348"
+UsedLibraryUrn="urn:adsk.eagle:library:371"
+UsedLibraryUrn="urn:adsk.eagle:library:372"
+UsedLibraryUrn="urn:adsk.eagle:library:409"
+
+[Win_1]
+Type="Control Panel"
+Loc="4 23 1439 877"
+State=2
+Number=0
+
+[Desktop]
+Screen="1440 900"
+Window="Win_1"
