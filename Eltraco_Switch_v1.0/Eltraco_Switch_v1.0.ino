@@ -1,5 +1,16 @@
 /*
 
+  changelog:
+
+  dec 2017:
+  new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
+  Length of MQTT outgoing message equal to Rocnet message length.
+  "yield()" in loop.
+  display of published and received messages on serial monitor harmonised.
+  change "byte" to "char"
+
+
+
   Eltraco_Switch v1.0
   Ready for publication
 
@@ -241,7 +252,7 @@ extern "C" {
 }
 
 WiFiClient espClient;
-PubSubClient client(espClient);
+
 
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
@@ -292,10 +303,10 @@ IPAddress gateway(192, 168, 1, 251);                                         // 
 IPAddress subnet(255, 255, 255, 0);                                          // subnet mask
 
 #endif
-
+PubSubClient client(espClient, mosquitto);
 //////////////////////////////////////// decoder function selection ///////////////////////////////////////////////////
 
-static const char *topicSub = "rocnet/ot";                                  // rocnet/ot for turnout control
+static const String topicSub = "rocnet/ot";                                  // rocnet/ot for turnout control
 
 static const byte outputNr = 8;                                             // 8 switches differs per decoder
 static const byte output[outputNr] = {D0, D1, D2, D3, D4, D5, D6, D7};      // output pins
@@ -319,22 +330,18 @@ void setup() {
 
   WiFi.hostname(wiFiHostname);
   setup_wifi();
-  client.setServer(mosquitto, 1883);
-  client.setCallback(callback);
 
   for (byte index = 0; index < outputNr; index++) {                         // initialising output pins
     pinMode(output[index], OUTPUT);
     digitalWrite(output[index], HIGH);
   }
 
-  delay(1000);
   for (byte index = 0; index < outputNr; index++) {                         // initialising output pins
     pinMode(output[index], OUTPUT);
     digitalWrite(output[index], LOW);
   }
 
-  client.setServer(mosquitto, 1883);
-  client.setCallback(callback);
+  client.set_callback(callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                 // Port defaults to 8266
@@ -365,8 +372,9 @@ void setup() {
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
 void loop() {
   ArduinoOTA.handle();                                                   // OTA handle must stay here in loop
-    ProcessOrder();
-
+  yield();
+  
+  ProcessOrder();
 
   if (!client.connected()) {                                             // maintain connection with Mosquitto
     reconnect();
@@ -401,18 +409,19 @@ void ProcessOrder() {
    function : receive incoming message, test topic, test recipient
 
 */
-void callback(char *topic, byte * payload, unsigned int length) {
-  if ((strncmp("rocnet/ot", topic, 9) == 0)) {
-    if (((byte)payload[2]) == (decoderId)) {
-      buf = ((byte) payload[10]);                                                 // switching order is stored
-      bufId = ((byte) payload[11]);                                               // pin to switch
+void callback(const MQTT::Publish& pub) {
+  if ((pub.topic()) == ("rocnet/ot")) {
+    if (((char)pub.payload()[2]) == (decoderId)) {
+      buf = ((char)pub.payload()[10]);                                                 // switching order is stored
+      bufId = ((char)pub.payload()[11]);                                               // pin to switch
       if (debugFlag == true) {
-        Serial.print(F("Message in ["));
-        Serial.print(topic);
-        Serial.print(F("] "));
-        for (byte index = 0; index < length; index++) {
-          Serial.print(((char)payload[index]), DEC);
-          if (index < length - 1) Serial.print(F("."));
+        Serial.println();
+        Serial.print("Msg received [");
+        Serial.print(pub.topic());
+        Serial.print(" - DEC, dotted] <== ");
+        for (char index = 0; index < (pub.payload_len()); index++) {
+          Serial.print(((char)pub.payload()[index]), DEC);
+          if (index < (pub.payload_len()) - 1) Serial.print(F("."));
         }
         Serial.println();
         if (buf == 1) {
@@ -421,10 +430,10 @@ void callback(char *topic, byte * payload, unsigned int length) {
           orderoutput = "OFF";
         }
         Serial.print(F("Message in ["));
-        Serial.print(topic);
+        Serial.print(pub.topic());
         Serial.print(F("] "));
         Serial.print(F("switch decoder "));
-        Serial.print(((byte) payload[2]));
+        Serial.print(((char) pub.payload()[2]));
         Serial.print(F(" output "));
         Serial.print(bufId);
         Serial.print(F(" to "));
@@ -450,9 +459,8 @@ void reconnect() {
       client.subscribe(topicSub);                              // subscribe to topic
     } else {
       Serial.print("no Broker");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);                                             // Wait 5 seconds before retrying
+      Serial.println(" try again in 1 second");
+      delay(1000);                                             // Wait 1 second before retrying
     }
   }
 }

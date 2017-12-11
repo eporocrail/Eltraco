@@ -1,4 +1,14 @@
 /*
+
+  changelog:
+
+  dec 2017:
+  new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
+  Length of MQTT outgoing message equal to Rocnet message length.
+  "yield()" in loop.
+  display of published and received messages on serial monitor harmonised.
+  change "byte" to "char"
+
   Eltraco_Sensor_v1.0
   Ready for publication
 
@@ -58,7 +68,7 @@
            D7    servo 2
            D8    not used
            A0    not used
-           
+
   ROCNET PROTOCOL
 
   packet payload content:
@@ -223,7 +233,7 @@
 
   During testing it turned out that move orders from Rocrail arived so fast that an ongoing movement was
   interrupted. incoming turnout orders are stored into buffer. When ongoing movement is concluded, buffer is converted
-  into turnout order. 
+  into turnout order.
 
   Author: E. Postma
 
@@ -240,7 +250,6 @@ extern "C" {
 }
 
 WiFiClient espClient;
-PubSubClient client(espClient);
 
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
@@ -290,16 +299,16 @@ IPAddress gateway(192, 168, 1, 251);                                        // I
 IPAddress subnet(255, 255, 255, 0);                                         // subnet mask
 
 #endif
-
+PubSubClient client(espClient, mosquitto);
 //////////////////////////////////////// decoder function selection ///////////////////////////////////////////////////
-static const char *topicPub = "rocnet/sr";                                   // rocnet/rs for sensor
-static const char *topicSub = "rocnet/sr";                                   // rocnet/rs for sensor
+static const String topicPub = "rocnet/sr";                                   // rocnet/rs for sensor
+static const String topicSub = "rocnet/sr";                                   // rocnet/rs for sensor
 
-static const byte sensorNr = 8;                                              // amount of sensors differs per decoder type
-static const byte addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};            // sensor addresses for sensor decoder,
-static const byte sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};       // sensor pins with each a pull-up resistor
+static const char sensorNr = 8;                                              // amount of sensors differs per decoder type
+static const char addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};            // sensor addresses for sensor decoder,
+static const char sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};       // sensor pins with each a pull-up resistor
 static boolean sensorInverted[sensorNr] = {false, false, false, false, false, false, false, false}; // inverts external digital sensor value if true
-static const byte analoguePin = A0;                                          // analogue pin
+static const char analoguePin = A0;                                          // analogue pin
 //////////////////////////////////////// end of decoder function selection ///////////////////////////////////////////////////
 
 static const int msgLength = 12;                                             // message number of bytes
@@ -309,16 +318,16 @@ static boolean sendMsg = false;                                              // 
 static boolean sensorStatus[sensorNr];                                       // status sensor pins
 static boolean sensorStatusOld[sensorNr];                                    // old status sensor pins
 static unsigned long sensorProcessTime[sensorNr];                            // sensor timer
-static byte sensorCountOff[sensorNr];                                        // counter negative sensor values
+static char sensorCountOff[sensorNr];                                        // counter negative sensor values
 static boolean scan = false;                                                 // sensorvalue
-static const byte scanDelay = 5;                                             // delay in sensor scan processing
-static const byte scanNegativeNr = 15;                                       // number of negative scan values for negative sensorstatus
+static const char scanDelay = 5;                                             // delay in sensor scan processing
+static const char scanNegativeNr = 15;                                       // number of negative scan values for negative sensorstatus
 
 static unsigned long anaScanTime = 0;                                        // analogue pin timer
 static const unsigned int anaScanInterval = 20;
 static unsigned int anaVal = 0;
-static byte anaStatus = 0;
-static byte anaStatusOld = 1;
+static char anaStatus = 0;
+static char anaStatusOld = 1;
 
 static boolean debugFlag = true;                                             // display debug messages
 static boolean configFlag = true;                                            // control servoconfiguration
@@ -345,12 +354,11 @@ void setup() {
   msgOut[6] = 1;
   msgOut[7] = 4;
 
-  for (byte index = 0; index < sensorNr; index++) {                          // initialising sensor pins
+  for (char index = 0; index < sensorNr; index++) {                          // initialising sensor pins
     pinMode(sensor[index], INPUT_PULLUP);
   }
 
-  client.setServer(mosquitto, 1883);
-  client.setCallback(callback);
+  client.set_callback(callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                  // Port defaults to 8266
@@ -381,26 +389,29 @@ void setup() {
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
 void loop() {
   ArduinoOTA.handle();                                                         // OTA handle must stay here in loop
-
+  yield();
+  
   ScanSensor();
-  ReadAna();
+//  ReadAna();
 
   if (!client.connected()) {                                                   // maintain connection with Mosquitto
     reconnect();
   }
   client.loop();                                                               // content of client.loop can not be moved to function
-  if (sendMsg == true) {                                                       // set sendMsg = 0 to transmit message
+if (sendMsg == true) {                                                       // set sendMsg = true  to transmit message
     if (debugFlag == true) {
-      Serial.print(F("Publish msg ["));
+      Serial.println();
+      Serial.print(F("Publish msg  ["));
       Serial.print(topicPub);
-      Serial.print(F(" - DEC] "));
+      Serial.print(F(" - DEC, dotted] ==> "));
       for (int index = 0 ; index < msgLength ; index++) {
         Serial.print((msgOut[index]), DEC);
+        if (index < msgLength - 1) Serial.print(F("."));
       }
       Serial.println();
     }
-    if (client.publish(topicPub, msgOut, 12) != true) {                        // message is published
-      Serial.println(F("fault publishing"));
+    if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) {     // message is published with qos2, highest 
+      Serial.println(F("fault publishing"));                                                 // guarantee for delivery of message to Mosquitto
     } else sendMsg = false;
   }
 }
@@ -441,7 +452,7 @@ void ReadAna() {
 
 */
 void ScanSensor() {
-  for (byte index = 0; index < sensorNr; index++) {
+  for (char index = 0; index < sensorNr; index++) {
     if ( millis() > sensorProcessTime[index]) {
       sensorProcessTime[index] = millis() + scanDelay;
       sensorStatusOld[index] = sensorStatus[index];
@@ -474,19 +485,18 @@ void ScanSensor() {
 
 
 */
-void callback(char *topic, byte *payload, unsigned int length) {
-  if ((strncmp("rocnet/sr", topic, 9) == 0)) {
-    if (((byte)payload[4]) == (decoderId)) {
-      if (debugFlag == true) {
-        Serial.print("Message in [");
-        Serial.print(topic);
-        Serial.print(" - DEC, dotted - ] ");
-        for (byte index = 0; index < msgLength; index++) {
-          Serial.print(((char)payload[index]), DEC);
-          if (index < msgLength - 1) Serial.print(F("."));
-        }
-        Serial.println();
+void callback(const MQTT::Publish& pub) {
+  if ((pub.topic()) == ("rocnet/sr")) {
+    if (debugFlag == true) {
+      Serial.println();
+      Serial.print("Msg received [");
+      Serial.print(pub.topic());
+      Serial.print(" - DEC, dotted] <== ");
+      for (char index = 0; index < (pub.payload_len()); index++) {
+        Serial.print(((char)pub.payload()[index]), DEC);
+        if (index < (pub.payload_len()) - 1) Serial.print(F("."));
       }
+      Serial.println();
     }
   }
 } // end of callback
@@ -506,9 +516,8 @@ void reconnect() {
       client.subscribe(topicSub);                              // subscribe to topic 1
     } else {
       Serial.print("no Broker");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);                                             // Wait 5 seconds before retrying
+      Serial.println(" try again in 1 second");
+      delay(1000);                                             // Wait 1 second before retrying
     }
   }
 }

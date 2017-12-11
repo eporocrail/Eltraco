@@ -1,4 +1,16 @@
 /*
+
+  changelog:
+
+  dec 2017:
+  new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
+  Length of MQTT outgoing message equal to Rocnet message length.
+  "yield()" in loop.
+  display of published and received messages on serial monitor harmonised.
+  change "byte" to "char"
+  reduce TX power
+
+
   Eltraco_Servo Remote v1.0
   Ready for publication
 
@@ -71,12 +83,13 @@ ESP_PCF8574 dipSwitch;
 
 
 WiFiClient espClient;
-PubSubClient client(espClient);
+
+#define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
 char wiFiHostname[] = "ServoTool";                           // Hostname displayed in OTA port
 
-static const char *topicPub = "rocnet/cf";                   // rocnet/cf for servo tool
-static const char *topicSub = "rocnet/cf";                   // rocnet/cf for servo tool
+static const String topicPub = "rocnet/cf";                   // rocnet/cf for servo tool
+static const String topicSub = "rocnet/cf";                   // rocnet/cf for servo tool
 
 ///////////////////////
 /*
@@ -118,7 +131,7 @@ IPAddress gateway(192, 168, 1, 251);                                     // IP a
 IPAddress subnet(255, 255, 255, 0);                                      // subnet mask
 
 #endif
-
+PubSubClient client(espClient, mosquitto);
 
 static boolean debugFlag = true;
 static boolean caseFlag = false;
@@ -128,27 +141,26 @@ static boolean caseFlag = false;
 
 static const int msgLength = 4;                              // message number of bytes
 static byte msgOut[msgLength];                               // outgoing messages
-static byte msgIn[msgLength];                                // incoming messages
-static byte msgFlag = 0;                                     // control sending message
-static byte sendNr = 1;
-static byte sendCntr = 0;
+static char msgFlag = 0;                                     // control sending message
+static char sendNr = 1;
+static char sendCntr = 0;
 
 static boolean dip[8];                                       // dipswitch
-static byte const Led = D0;                                  // acknowledge LED
-static byte const ackButton = D5;                            // acknowledge button
-static byte const potPin = A0;                               // potentiometer read pin
+static char const Led = D0;                                  // acknowledge LED
+static char const ackButton = D5;                            // acknowledge button
+static char const potPin = A0;                               // potentiometer read pin
 
 static int potVal = 0;                                       // pot meter value
-static byte potValOld = 0;
-static byte butVal = 0;                                      // button value
+static char potValOld = 0;
+static char butVal = 0;                                      // button value
 
-static byte decoderAddress = 0;
-static byte decoderAddressOld = 0;
+static char decoderAddress = 0;
+static char decoderAddressOld = 0;
 static boolean addressSelected = false;
 static boolean msgPotSent = false;
 static boolean msgStraightSent = false;
 static boolean msgThrownSent = false;
-static byte confirmCount = 0;
+static char confirmCount = 0;
 
 static unsigned long readPotTimer = millis();                 // timers
 static unsigned long flashTimer = millis();
@@ -156,36 +168,36 @@ static unsigned long addressSelectTimer = millis();
 static unsigned long confirmTimer = millis();
 static unsigned long nextAddressTimer = millis();
 
-static const byte readPotDelay = 100;                        // delays
-static const byte addressSelectDelay = 100;
-static const byte confirmDelay = 250;
-static const byte nextAddressDelay = 250;
+static const char readPotDelay = 100;                        // delays
+static const char addressSelectDelay = 100;
+static const char confirmDelay = 250;
+static const char nextAddressDelay = 250;
 
 boolean ackConfirm = false;
 boolean ackConfirmOld = false;
 
 
-static const byte flashDuration = 100;                      // flash
-static byte flashCounter = 0;
-static const byte flashAmount = 3;
+static const char flashDuration = 100;                      // flash
+static char flashCounter = 0;
+static const char flashAmount = 3;
 
-static byte control = 1;
-static byte stepBack = 0;
-static byte ledState = LOW;
+static char control = 1;
+static char stepBack = 0;
+static char ledState = LOW;
 ///////////////////////////////////////////////////////////////set-up//////////////////////////////
 void setup() {
   Serial.begin(9600);
 
   Serial.println();
 
-  wifi_station_set_hostname(wiFiHostname);        // but sets host name visibale on serial monitor (OTA)
+  system_phy_set_max_tpw(WIFI_TX_POWER); //set as lower TX power as possible
+
+  WiFi.hostname(wiFiHostname);
   setup_wifi();
 
-  client.setServer(mosquitto, 1883);
-  client.setCallback(Callback);
+  client.set_callback(callback);
 
   memset(msgOut, 0, sizeof(msgOut));
-  memset(msgIn, 0, sizeof(msgIn));
   memset(dip, 0, sizeof(dip));
 
   dipSwitch.begin(PCF8574_ADDRESS, SDA_PIN, CLK_PIN);
@@ -197,6 +209,8 @@ void setup() {
 ///////////////////////////////////////////////////////////////end of set-up////////////////////////
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
 void loop() {
+  yield();
+
   switch (control) {
     case 1:
       SelectAddress();
@@ -214,11 +228,12 @@ void loop() {
     Reconnect();
   }
   client.loop();                                           // content of client. loop can not be moved to function
-  if (control == 0) {                                      // set control =0 to transmit message
+  if (control == 0) {                                      // set control = true to transmit message
     if (debugFlag == true) {
-      Serial.print(F("Publish msg ["));
+      Serial.println();
+      Serial.print(F("Publish msg  ["));
       Serial.print(topicPub);
-      Serial.print(F(" - DEC] "));
+      Serial.print(F(" - DEC, dotted] ==> "));
       for (int index = 0 ; index < msgLength ; index++) {
         Serial.print((msgOut[index]), DEC);
         if (index < msgLength - 1) Serial.print(F("."));
@@ -230,12 +245,12 @@ void loop() {
         control = 1;
         break;
       case 1:
-        msgPotSent = client.publish(topicPub, msgOut, msgLength);
+        msgPotSent = client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2));
         if (msgPotSent == false) Serial.println(F("fault publishing"));
         else control = 2;
         break;
       case 2:
-        msgStraightSent = client.publish(topicPub, msgOut, msgLength);
+        msgStraightSent = client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2));
         if (msgStraightSent == false) Serial.println(F("fault publishing"));
         else {
           Serial.println(F("Straight position sent"));
@@ -244,7 +259,7 @@ void loop() {
         }
         break;
       case 3:
-        msgThrownSent = client.publish(topicPub, msgOut, msgLength);
+        msgThrownSent = client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2));
         if (msgThrownSent == false) Serial.println(F("fault publishing")); {
           Serial.println(F("Thrown position sent"));
           msgOut[3] = 0;
@@ -252,7 +267,7 @@ void loop() {
         }
         break;
       case 5:
-        if ((client.publish(topicPub, msgOut, msgLength)) == false) Serial.println(F("fault publishing")); {
+        if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) Serial.println(F("fault publishing")); {
           sendCntr++;
           if (sendCntr == sendNr) {
             Serial.println(F("Sequence concluded, next decoder"));
@@ -286,11 +301,11 @@ void SelectAddress() {
     if (millis() - addressSelectTimer >= addressSelectDelay) {
       confirmCount = 0;
       addressSelectTimer = millis();
-      for (byte index = 0 ; index < 8 ; index++) {
+      for (char index = 0 ; index < 8 ; index++) {
         dip[index] = dipSwitch.getBit(index);                       // read dipswitch
       }
       decoderAddressOld = decoderAddress;
-      for (byte index = 0 ; index < 8 ; index++) {
+      for (char index = 0 ; index < 8 ; index++) {
         if (dip[index] == true) decoderAddress |= (1 << index);     // forces nth bit of x to be 1.
         else  decoderAddress &= ~(1 << index);                      // forces nth bit of x to be 0.
       }
@@ -418,27 +433,16 @@ void Flash() {
 
 
 */
-void Callback(char *topic, byte * payload, unsigned int length) {
-  if (*topic != *topicSub) {
-    Serial.print(F("Wrong toppic ["));
-    Serial.print(topicSub);
-    Serial.println(F("] "));
-    Serial.print(F("Message in ["));
-    Serial.print(topic);
-    Serial.print(F("] "));
-    for (byte index = 0; index < length; index++) {
-      Serial.print(((char)payload[index]));
-    }
-    Serial.println();
-  } else {
+void callback(const MQTT::Publish& pub) {
+  if ((pub.topic()) == ("rocnet/cf")) {
     if (debugFlag == true) {
-      Serial.print(F("Message in  ["));
-      Serial.print(topic);
-      Serial.print(F(" - DEC] "));
-      for (byte index = 0; index < msgLength; index++) {
-        msgIn[index] = (char)payload[index];
-        Serial.print(((char)payload[index]), DEC);
-        if (index < msgLength - 1) Serial.print(F("."));
+      Serial.println();
+      Serial.print("Msg received [");
+      Serial.print(pub.topic());
+      Serial.print(" - DEC, dotted] <== ");
+      for (char index = 0; index < (pub.payload_len()); index++) {
+        Serial.print(((char)pub.payload()[index]), DEC);
+        if (index < (pub.payload_len()) - 1) Serial.print(F("."));
       }
       Serial.println();
     }
@@ -460,9 +464,8 @@ void Reconnect() {
       client.subscribe(topicSub);                              // subscribe
     } else {
       Serial.print("no Broker");
-      Serial.print(client.state());
-      Serial.println(" try again in 3 seconds");
-      delay(3000);                                             // Wait 3 seconds before retrying
+      Serial.println(" try again in 1 second");
+      delay(1000);                                             // Wait 1 second before retrying
     }
   }
 }

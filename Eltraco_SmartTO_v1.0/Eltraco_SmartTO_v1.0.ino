@@ -1,5 +1,16 @@
 /*
 
+
+  changelog:
+
+  dec 2017:
+  new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
+  Length of MQTT outgoing message equal to Rocnet message length.
+  "yield()" in loop.
+  display of published and received messages on serial monitor harmonised.
+  change "byte" to "char"
+
+
   Eltraco_SmartTO_v1.0
   Ready for publication
 
@@ -244,7 +255,6 @@ extern "C" {
 
 Servo servo[2];
 WiFiClient espClient;
-PubSubClient client(espClient);
 
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
@@ -296,29 +306,29 @@ IPAddress gateway(192, 168, 1, 251);                                        // I
 IPAddress subnet(255, 255, 255, 0);                                         // subnet mask
 
 #endif
-
+PubSubClient client(espClient, mosquitto);
 //////////////////////////////////////// decoder function selection ///////////////////////////////////////////////////
-static const char *topicPub = "rocnet/sr";                                  // rocnet/rs for sensor
-static const char *topicSub1 = "rocnet/ot";                                 // rocnet/ot for turnout control
-static const char *topicSub2 = "rocnet/cf";                                 // rocnet/cf for servo configuration
-static const char *topicSub3 = "rocnet/sr";                                 // rocnet/rs for sensor
+static const String topicPub = "rocnet/sr";                                  // rocnet/rs for sensor
+static const String topicSub1 = "rocnet/ot";                                 // rocnet/ot for turnout control
+static const String topicSub2 = "rocnet/cf";                                 // rocnet/cf for servo configuration
+static const String topicSub3 = "rocnet/sr";                                 // rocnet/rs for sensor
 
 // Turnout decoder
-static const byte turnoutBus = 9;                                           // Rocrail Busnumber for turnout
-static const byte turnoutNr = 2;                                            // number of turnouts for the PCB
-static const byte addressTu[turnoutNr] = {turnoutNr1, turnoutNr2};          // address of both turnouts
-static const byte servoPin[turnoutNr] = {D6, D7};                           // servo pin number
-static byte servoPos[turnoutNr][2] = {
+static const char turnoutBus = 9;                                           // Rocrail Busnumber for turnout
+static const char turnoutNr = 2;                                            // number of turnouts for the PCB
+static const char addressTu[turnoutNr] = {turnoutNr1, turnoutNr2};          // address of both turnouts
+static const char servoPin[turnoutNr] = {D6, D7};                           // servo pin number
+static char servoPos[turnoutNr][2] = {
   {45, 135},
   {20, 140}
 };                                                                          // pos straight, pos thrown
 static boolean inverted[turnoutNr] = {false, false};                        // if angleservoPos 0 > servoPos 1 than inverted = true
-static const byte relais[turnoutNr] =  {D0, D5};                            // relais pin number
-static byte servoDelay[turnoutNr] = {40, 40};                               // controls speed servo movement, higher is slower
+static const char relais[turnoutNr] =  {D0, D5};                            // relais pin number
+static char servoDelay[turnoutNr] = {40, 40};                               // controls speed servo movement, higher is slower
 // sensor
-static const byte sensorNr = 2;                                             // amount of sensors
-static const byte addressSr[sensorNr] = {turnoutNr1, turnoutNr2};           // sensor addresses
-static const byte sensor[sensorNr] = {D1, D2};                              // sensor pins with each a pull-up resistor
+static const char sensorNr = 2;                                             // amount of sensors
+static const char addressSr[sensorNr] = {turnoutNr1, turnoutNr2};           // sensor addresses
+static const char sensor[sensorNr] = {D1, D2};                              // sensor pins with each a pull-up resistor
 
 //////////////////////////////////////// end of decoder function selection ///////////////////////////////////////////////////
 
@@ -329,14 +339,14 @@ static boolean forMe = false;                                               // f
 static boolean firstMsg = true;                                             // flag to throw away first message (dump from rocrail)
 
 struct {
-  byte targetId = 0;
+  char targetId = 0;
   boolean order = false;
   boolean orderOld = false;
   boolean orderNew = false;
 } buf;
 
 struct {
-  byte targetId = 0;
+  char targetId = 0;
   boolean in = false;
   boolean executed = false;
   boolean msgMove = false;
@@ -346,26 +356,26 @@ struct {
 static boolean sensorStatus[sensorNr];                                     // status sensor pins
 static boolean sensorStatusOld[sensorNr];                                  // old status sensor pins
 static unsigned long sensorProcessTime[sensorNr];                          // sensor timer
-static byte sensorCountOff[sensorNr];                                      // counter negative sensor values
+static char sensorCountOff[sensorNr];                                      // counter negative sensor values
 static boolean scan = false;                                               // sensorvalue
-static const byte scanDelay = 5;                                           // delay in sensor scan processing
-static const byte scanNegativeNr = 15;                                     // number of negative scan values for negative sensorstatus
+static const char scanDelay = 5;                                           // delay in sensor scan processing
+static const char scanNegativeNr = 15;                                     // number of negative scan values for negative sensorstatus
 
 static String(turnoutOrder) = "";                                          // used with debugging
 static unsigned int relaisSwitchPoint[turnoutNr];                          // relais switch start time
 static unsigned int relaisSwitchDelay[turnoutNr];                          // calculated relais switch time
 static boolean turnoutInit[turnoutNr];                                     // servo initiation flag
-static byte currentPosition[turnoutNr];                                    // servo position
-static byte targetPosition[turnoutNr];                                     // servo position to be reached
+static char currentPosition[turnoutNr];                                    // servo position
+static char targetPosition[turnoutNr];                                     // servo position to be reached
 static unsigned long servoMoveTime[turnoutNr];                             // servo timer
-static byte turnoutId = 0;                                                 // id turnout
+static char turnoutId = 0;                                                 // id turnout
 static boolean turnoutMoving = false;
 
-static byte servoId = 0;                                                   // id servo
-static byte servoAngle;                                                    // angle servo
-static byte servoAngleOld;
-static byte ackStraight = 0;                                               // ack straight for servo adjust
-static byte ackThrown = 0;                                                 // ack thrown for servo adjust
+static char servoId = 0;                                                   // id servo
+static char servoAngle;                                                    // angle servo
+static char servoAngleOld;
+static char ackStraight = 0;                                               // ack straight for servo adjust
+static char ackThrown = 0;                                                 // ack thrown for servo adjust
 
 static boolean debugFlag = true;                                           // display debug messages
 static boolean configFlag = true;                                          // control servoconfiguration
@@ -411,25 +421,24 @@ void setup() {
   memset(targetPosition, 0, sizeof(targetPosition));
   memset(turnoutInit, 0, sizeof(turnoutInit));
 
-  for (byte index = 0; index < sensorNr; index++) {                              // initialising sensor pins
+  for (char index = 0; index < sensorNr; index++) {                              // initialising sensor pins
     pinMode(sensor[index], INPUT_PULLUP);
   }
-  for (byte index = 0; index < turnoutNr ; index++) {                            // initialising relais pins
+  for (char index = 0; index < turnoutNr ; index++) {                            // initialising relais pins
     pinMode(relais[index], OUTPUT);
     digitalWrite(relais[index], LOW);
   }
-  for (byte index = 0; index < turnoutNr ; index++) {                            // initialising relais switch points
+  for (char index = 0; index < turnoutNr ; index++) {                            // initialising relais switch points
     if ((servoPos[index][0]) > (servoPos[index][1])) inverted[index] = true;
     relaisSwitchPoint[index] = ((servoPos[index][0] + servoPos[index][1]) / 2);
   }
-  for (byte index = 0; index < turnoutNr ; index++) {                            // attaching servos
+  for (char index = 0; index < turnoutNr ; index++) {                            // attaching servos
     servo[index].attach (servoPin[index]);
   }
 
   StartPosition();                                                               // move servosto initial position
 
-  client.setServer(mosquitto, 1883);
-  client.setCallback(callback);
+  client.set_callback(callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                      // Port defaults to 8266
@@ -463,29 +472,32 @@ void setup() {
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
 void loop() {
   ArduinoOTA.handle();                                                          // OTA handle must stay here in loop
+  yield();
 
   CheckBuffer();
   ProcessOrder();
   if (configFlag == false) ServoAdjust();
   ScanSensor();
-  
+
   if (!client.connected()) {                                                   // maintain connection with Mosquitto
     reconnect();
   }
   client.loop();                                                               // content of client.loop can not be moved to function
-  if (sendMsg == true) {
+  if (sendMsg == true) {                                                       // set sendMsg = true  to transmit message
     if (debugFlag == true) {
-      Serial.print(F("Publish msg ["));
+      Serial.println();
+      Serial.print(F("Publish msg  ["));
       Serial.print(topicPub);
-      Serial.print(" - DEC, dotted - ] ");
+      Serial.print(F(" - DEC, dotted] ==> "));
       for (int index = 0 ; index < msgLength ; index++) {
         Serial.print((msgOut[index]), DEC);
         if (index < msgLength - 1) Serial.print(F("."));
       }
       Serial.println();
     }
-    if (client.publish(topicPub, msgOut, 12) != true) Serial.println(F("fault publishing")); // message is published
-    sendMsg = false;
+    if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) {     // message is published with qos2, highest
+      Serial.println(F("fault publishing"));                                                 // guarantee for delivery of message to Mosquitto
+    } else sendMsg = false;
   }
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
@@ -502,7 +514,7 @@ void loop() {
 
 */
 void ScanSensor() {
-  for (byte index = 0; index < sensorNr; index++) {
+  for (char index = 0; index < sensorNr; index++) {
     if ( millis() > sensorProcessTime[index]) {
       sensorProcessTime[index] = millis() + scanDelay;
       sensorStatusOld[index] = sensorStatus[index];
@@ -579,7 +591,7 @@ void ProcessOrder() {
    calls    : txMsgMove, txMsgMoveStop
 
 */
-byte Thrown(byte turnoutId) {
+char Thrown(char turnoutId) {
   currentPosition[turnoutId] = servo[turnoutId].read();
   if ((currentPosition[turnoutId]) != (servoPos[turnoutId][1]) && millis() >= servoMoveTime[turnoutId]) {
     if (inverted[turnoutId] == true) {
@@ -612,7 +624,7 @@ byte Thrown(byte turnoutId) {
    calls    : txMsgMove, txMsgMoveStop
 
 */
-byte Straight(byte turnoutId) {
+char Straight(char turnoutId) {
   currentPosition[turnoutId] = servo[turnoutId].read();
   if ((currentPosition[turnoutId]) != (servoPos[turnoutId][0]) && millis() >= servoMoveTime[turnoutId]) {
     if (inverted[turnoutId] == true) {
@@ -695,10 +707,10 @@ void ServoAdjust() {
 
 */
 void WriteEEPROM() {
-  byte val = 0;
-  byte tlr = 0;
-  for (byte index = 0; index < turnoutNr; index++) {
-    for (byte ind = 0; ind < 2; ind++) {
+  char val = 0;
+  char tlr = 0;
+  for (char index = 0; index < turnoutNr; index++) {
+    for (char ind = 0; ind < 2; ind++) {
       val = servoPos[index][ind];
       tlr = (index * 2 + ind);
       EEPROM.write (tlr, val);
@@ -747,7 +759,7 @@ void ReadEEPROM() {
    called by: Thrown, Straight
 
 */
-byte txMsgMove(byte turnoutId) {
+char txMsgMove(char turnoutId) {
   msgOut[11] = addressSr[turnoutId];
   msgOut[10] = 1;
   sendMsg = true;
@@ -761,7 +773,7 @@ byte txMsgMove(byte turnoutId) {
    called by: Thrown, Straight
 
 */
-byte txMsgMoveStop(byte turnoutId) {
+char txMsgMoveStop(char turnoutId) {
   msgOut[11] = addressSr[turnoutId];
   msgOut[10] = 0;
   sendMsg = true;
@@ -775,75 +787,78 @@ byte txMsgMoveStop(byte turnoutId) {
    select incoming turnout switch orders, select turnout number, store order into buffer.
 
 */
-void callback(char *topic, byte * payload, unsigned int length) {
-  if ((strncmp("rocnet/sr", topic, 9) == 0)) {
+void callback(const MQTT::Publish& pub) {
+  if ((pub.topic()) == ("rocnet/sr")) {
     forMe = false;
-    for (byte index = 0; index < turnoutNr; index++) {
-      if (((byte)payload[11]) == (addressTu[index])) {          // check if address is contained in address array
+    for (char index = 0; index < turnoutNr; index++) {
+      if (((char)pub.payload()[11]) == (addressTu[index])) {          // check if address is contained in address array
         forMe = true;
       }
     }
     if (forMe == true) {
       if (debugFlag == true) {
-        Serial.print("Message in [");
-        Serial.print(topic);
-        Serial.print(" - DEC, dotted - ] ");
-        for (byte index = 0; index < msgLength; index++) {
-          Serial.print(((char)payload[index]), DEC);
-          if (index < msgLength - 1) Serial.print(F("."));
+        Serial.println();
+        Serial.print("Msg received [");
+        Serial.print(pub.topic());
+        Serial.print(" - DEC, dotted] <== ");
+        for (char index = 0; index < (pub.payload_len()); index++) {
+          Serial.print(((char)pub.payload()[index]), DEC);
+          if (index < (pub.payload_len()) - 1) Serial.print(F("."));
         }
         Serial.println();
       }
     }
   }
 
-  if ((strncmp("rocnet/cf", topic, 9) == 0)) {
+  if ((pub.topic()) == ("rocnet/cf")) {
     forMe = false;                                        // check if address is contained in address array
     servoId = 0;
-    for (byte index = 0; index < turnoutNr; index++) {
-      if (((byte)payload[0]) == (addressTu[index])) {
+    for (char index = 0; index < turnoutNr; index++) {
+      if (((char)pub.payload()[0]) == (addressTu[index])) {
         forMe = true;
         servoId = index;
       }
     }
     if (forMe == true) {
       if (debugFlag == true) {
-        Serial.print("Message in [");
-        Serial.print(topic);
-        Serial.print(" - DEC, dotted - ] ");
-        for (byte index = 0; index < msgLength; index++) {
-          Serial.print(((char)payload[index]), DEC);
-          if (index < msgLength - 1) Serial.print(F("."));
+        Serial.println();
+        Serial.print("Msg received [");
+        Serial.print(pub.topic());
+        Serial.print(" - DEC, dotted] <== ");
+        for (char index = 0; index < (pub.payload_len()); index++) {
+          Serial.print(((char)pub.payload()[index]), DEC);
+          if (index < (pub.payload_len()) - 1) Serial.print(F("."));
         }
         Serial.println();
       }
       configFlag = false;
-      servoAngle = ((byte)payload[1]);
-      ackStraight = ((byte)payload[2]);
-      ackThrown = ((byte)payload[3]);
+      servoAngle = ((char)pub.payload()[1]);
+      ackStraight = ((char)pub.payload()[2]);
+      ackThrown = ((char)pub.payload()[3]);
     }
   }
 
-  if ((strncmp("rocnet/ot", topic, 9) == 0)) {
+  if ((pub.topic()) == ("rocnet/ot")) {
     forMe = false;
-    if (((byte)payload[2]) == (turnoutBus)) {
-      for (byte index = 0; index < turnoutNr; index++) {
-        if (((byte)payload[11]) == (addressTu[index])) {          // check if address is contained in address array
+    if (((char)pub.payload()[2]) == (turnoutBus)) {
+      for (char index = 0; index < turnoutNr; index++) {
+        if (((char)pub.payload()[11]) == (addressTu[index])) {          // check if address is contained in address array
           buf.targetId = index;
           forMe = true;
         }
       }
       if (forMe == true) {
         buf.orderOld = buf.order;
-        buf.order = ((byte) payload[8]);
+        buf.order = ((char)pub.payload()[8]);
         buf.orderNew = true;
         if (debugFlag == true) {
-          Serial.print(F("Message in ["));
-          Serial.print(topic);
-          Serial.print(F(" - DEC, dotted - ] "));
-          for (byte index = 0; index < length; index++) {
-            Serial.print(((char)payload[index]), DEC);
-            if (index < length - 1) Serial.print(F("."));
+          Serial.println();
+          Serial.print("Msg received [");
+          Serial.print(pub.topic());
+          Serial.print(" - DEC, dotted] <== ");
+          for (char index = 0; index < (pub.payload_len()); index++) {
+            Serial.print(((char)pub.payload()[index]), DEC);
+            if (index < (pub.payload_len()) - 1) Serial.print(F("."));
           }
           Serial.println();
           if ((buf.order) == 1) {
@@ -853,7 +868,7 @@ void callback(char *topic, byte * payload, unsigned int length) {
           }
           if (turnoutNr > 0) {
             Serial.print(F("Message in ["));
-            Serial.print(topic);
+            Serial.print(pub.topic());
             Serial.print(F("] "));
             Serial.print(F("switch turnout - "));
             Serial.print(buf.targetId + 1);
@@ -887,9 +902,8 @@ void reconnect() {
       client.subscribe(topicSub3);                              // and resubscribe to topic 3
     } else {
       Serial.print("no Broker");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);                                             // Wait 5 seconds before retrying
+      Serial.println(" try again in 1 second");
+      delay(1000);                                             // Wait 1 second before retrying
     }
   }
 }
@@ -903,7 +917,7 @@ void reconnect() {
 
 */
 void StartPosition() {
-  for (byte index = 0; index < turnoutNr ; index++) {
+  for (char index = 0; index < turnoutNr ; index++) {
     servo[index].write(relaisSwitchPoint[index]);
     delay(500);
     servo[index].write(servoPos[index][0]);
