@@ -184,7 +184,7 @@
 
   Addressing falls apart in a WiFi address, being an IP-address and a Rocnet address.
 
-  Addressing:
+  Rocnet:
 
   In the Rocnet protocol (IdH*256 + IdL) represents the Rocnet Node Number. This number ranges from 1 .. 65536.
   It represents the "Bus" number.
@@ -228,12 +228,18 @@
   turnout at "Address" 2.
 
   Table: Switches tab Interface - "9" is inserted into field "Bus"
+  
          The unique number of the turnout is inserted into field "Address"
+         
          e.g. (turnout 23 is inserted as Bus 9 Address 23)
+         
 
   Table: Sensor tab Interface - "9" is inserted into field "Bus"
+  
          The unique number of the turnout is inserted into field "Address"
+         
          e.g. (sensor for turnout 23 is inserted as Bus 9 Address 23)
+         
 
   Each of all other kinds of decoder is allocated a unique IP-address out of the range
   192.168.xxx.2 - 192.168.2.250. The last triplet is the Rocrail "Bus" number.
@@ -248,7 +254,9 @@
   The sensors report using "Address" numbers 1 .. 9.
 
   Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
+  
          port number is inserted into field "Address"
+         
          e.g. (192.168.0.076 sensor 5 is inserted as Bus 76 Address 5)
          
 
@@ -261,11 +269,14 @@
   The outputs are switched using "Address" numbers 1 .. 8.
 
   Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
+  
          The individual port number is inserted into field "Address"
+         
          e.g. (192.168.0.201 port 3 is inserted as Bus 201 Address 3)
+         
 
   During testing it turned out that move orders from Rocrail arived so fast that an ongoing movement was
-  interrupted. incoming turnout orders are stored into buffer. When ongoing movement is concluded, buffer is converted
+  interrupted. Incoming turnout orders are stored into buffer. When ongoing movement is concluded, buffer is converted
   into turnout order.
   
 
