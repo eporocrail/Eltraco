@@ -1,4 +1,4 @@
-  /*************************************************************************************
+
 
   Aim is to develop a switching and signaling system for model railroad track control.
   Communication is wireless.
