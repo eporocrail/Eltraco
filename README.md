@@ -113,9 +113,13 @@
 
   groups
   code   description     remark                     MQTT topic
+  
   0      Host            Rocrail                    rocnet/ht
+  
   7      Clock Fast      Clock                      rocnet/ck
+  
   8      Sensor          Position determination     rocnet/sr
+  
   9      Output                                     rocnet/ot
 
 
@@ -126,8 +130,11 @@
      bit 4 .. 0:  5 bit command 0 .. 31
 
   Type: 0 - test
+  
   1 - request
+  
   2 - event
+  
   3 - reply
 
   Sensor
@@ -142,13 +149,18 @@
   Output
 
   Type   Value
+  
   switch   0
+  
   light    1
+  
   servo    2
 
   Actions
   code description data 1  data 2  data 3
+  
   0      off       type    value   address
+  
   1      on        type    value   address
 
   --byte 8 Netto number of following data bytes.
@@ -188,8 +200,11 @@
 
 
   IP-addres: Router 192.168.xxx.251
+  
              Servo tool 192.168.xxx.252
+             
              Command Station 192.168.xxx.253
+             
              Mosquitto 192.168.xxx.254
 
   For the decoders are available 192.168.xxx.2 - 192.168.2.250 except 192.168.xxx.9
