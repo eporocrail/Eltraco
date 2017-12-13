@@ -126,8 +126,11 @@
   --byte 7
 
   Code:  bit 7 = 0
+  
      bit 6 and bit 5 represent Type of code
+     
      bit 4 .. 0:  5 bit command 0 .. 31
+     
 
   Type: 0 - test
   
@@ -136,6 +139,7 @@
   2 - event
   
   3 - reply
+  
 
   Sensor
 
@@ -145,6 +149,7 @@
 
   ¹) Address of the reporting loco.
   The sensor ID is set in the header; Sender.
+  
 
   Output
 
@@ -164,6 +169,7 @@
   1      on        type    value   address
 
   --byte 8 Netto number of following data bytes.
+  
 
   At a speed of 200 KmH a loc runs 64 mm per second in scale H0 and 35 mm per second in scale N.
   To come to a reliable detection reaction a point sensor must be scanned at least 20 times per second in H0
@@ -208,6 +214,7 @@
              Mosquitto 192.168.xxx.254
 
   For the decoders are available 192.168.xxx.2 - 192.168.2.250 except 192.168.xxx.9
+  
 
   Smart turnout decoder:
 
@@ -230,6 +237,7 @@
 
   Each of all other kinds of decoder is allocated a unique IP-address out of the range
   192.168.xxx.2 - 192.168.2.250. The last triplet is the Rocrail "Bus" number.
+  
 
   Sensor decoder:
   Each decoder has eight digital and one analogue sensor.
@@ -242,6 +250,7 @@
   Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
          port number is inserted into field "Address"
          e.g. (192.168.0.076 sensor 5 is inserted as Bus 76 Address 5)
+         
 
   Output decoder
   Each decoder has eight outputs.
@@ -258,6 +267,7 @@
   During testing it turned out that move orders from Rocrail arived so fast that an ongoing movement was
   interrupted. incoming turnout orders are stored into buffer. When ongoing movement is concluded, buffer is converted
   into turnout order.
+  
 
   Author: E. Postma
 
