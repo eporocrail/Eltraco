@@ -40,36 +40,58 @@
   Decoder  pins     function
 
   Sensor   D0 .. D7     digital sensor
+  
            A0           analogue sensor
 
   Switch   D0 .. D7     output (switch)
 
   Turnout  D0    relais 1
+  
            D1    current detector 1
+           
            D2    current detector 2
+           
            D3    not used
+           
            D4    not used
+           
            D5    relais 2
+           
            D6    servo 1
+           
            D7    servo 2
+           
            D8    not used
+           
            A0    not used
 
   ROCNET PROTOCOL
 
   packet payload content:
   byte 1  : groupId
+  
   byte 2  : receiveIdH
+  
   byte 3  : receiveIdL
+  
   byte 4  : sendIdH
+  
   byte 5  : sendIdL
+  
   byte 6  : group
+  
   byte 7  : code
+  
   byte 8  : length
+  
   byte 9  : data1
+  
   byte 10 : data2
+  
   byte 11 : data3
+  
   byte 12 : data4
+  
 
   --byte 1 only used for large network. Normally 0.
 
@@ -78,6 +100,7 @@
   --byte 3 Rocrail Server default Id is 1
 
   Broadcast Id = 0
+  
   Decoder   Id = 2 ... 255   Not used for switching decoder
 
   --byte 4 only used when more than 255 decoders. Normally 0.
