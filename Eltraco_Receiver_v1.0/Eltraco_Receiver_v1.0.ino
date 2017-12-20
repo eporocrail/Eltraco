@@ -1,7 +1,10 @@
 /*
 
-
   changelog:
+        
+  dec 2017-2
+  "char" for numbers is WRONG!
+  change to byte
 
   dec 2017:
   software module added to retrieve MQTT broker IP-address and portnumber from Rocrail server.
@@ -37,7 +40,7 @@ uint16_t udpPort = 8051;
 
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
-static char decoderId = 149;                                      // also used in IP address decoder (check if IP address is available)
+static byte decoderId = 149;                                      // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-Receiver";                  // Hostname displayed in OTA port
 static const String topicSub = "rocnet/#";
 //static const String topicSub = "/#";                              // select topic from which message are received
@@ -135,8 +138,8 @@ void callback(const MQTT::Publish& pub) {
   Serial.print("Msg received [");
   Serial.print(pub.topic());
   Serial.print(" - DEC, dotted] <== ");
-  for (char index = 0; index < (pub.payload_len()); index++) {
-    Serial.print(((char)pub.payload()[index]), DEC);
+  for (byte index = 0; index < (pub.payload_len()); index++) {
+    Serial.print(((byte)pub.payload()[index]), DEC);
     if (index < (pub.payload_len()) - 1) Serial.print(F("."));
   }
   Serial.println();

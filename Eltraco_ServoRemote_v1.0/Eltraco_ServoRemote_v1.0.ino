@@ -1,6 +1,10 @@
 /*
 
   changelog:
+            
+  dec 2017-2
+  "char" for numbers is WRONG!
+  change to byte
 
   dec 2017:
   new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
@@ -141,26 +145,26 @@ static boolean caseFlag = false;
 
 static const int msgLength = 4;                              // message number of bytes
 static byte msgOut[msgLength];                               // outgoing messages
-static char msgFlag = 0;                                     // control sending message
-static char sendNr = 1;
-static char sendCntr = 0;
+static byte msgFlag = 0;                                     // control sending message
+static byte sendNr = 1;
+static byte sendCntr = 0;
 
 static boolean dip[8];                                       // dipswitch
-static char const Led = D0;                                  // acknowledge LED
-static char const ackButton = D5;                            // acknowledge button
-static char const potPin = A0;                               // potentiometer read pin
+static byte const Led = D0;                                  // acknowledge LED
+static byte const ackButton = D5;                            // acknowledge button
+static byte const potPin = A0;                               // potentiometer read pin
 
 static int potVal = 0;                                       // pot meter value
-static char potValOld = 0;
-static char butVal = 0;                                      // button value
+static byte potValOld = 0;
+static byte butVal = 0;                                      // button value
 
-static char decoderAddress = 0;
-static char decoderAddressOld = 0;
+static byte decoderAddress = 0;
+static byte decoderAddressOld = 0;
 static boolean addressSelected = false;
 static boolean msgPotSent = false;
 static boolean msgStraightSent = false;
 static boolean msgThrownSent = false;
-static char confirmCount = 0;
+static byte confirmCount = 0;
 
 static unsigned long readPotTimer = millis();                 // timers
 static unsigned long flashTimer = millis();
@@ -168,22 +172,22 @@ static unsigned long addressSelectTimer = millis();
 static unsigned long confirmTimer = millis();
 static unsigned long nextAddressTimer = millis();
 
-static const char readPotDelay = 100;                        // delays
-static const char addressSelectDelay = 100;
-static const char confirmDelay = 250;
-static const char nextAddressDelay = 250;
+static const byte readPotDelay = 100;                        // delays
+static const byte addressSelectDelay = 100;
+static const byte confirmDelay = 250;
+static const byte nextAddressDelay = 250;
 
 boolean ackConfirm = false;
 boolean ackConfirmOld = false;
 
 
-static const char flashDuration = 100;                      // flash
-static char flashCounter = 0;
-static const char flashAmount = 3;
+static const byte flashDuration = 100;                      // flash
+static byte flashCounter = 0;
+static const byte flashAmount = 3;
 
-static char control = 1;
-static char stepBack = 0;
-static char ledState = LOW;
+static byte control = 1;
+static byte stepBack = 0;
+static byte ledState = LOW;
 ///////////////////////////////////////////////////////////////set-up//////////////////////////////
 void setup() {
   Serial.begin(9600);
@@ -301,11 +305,11 @@ void SelectAddress() {
     if (millis() - addressSelectTimer >= addressSelectDelay) {
       confirmCount = 0;
       addressSelectTimer = millis();
-      for (char index = 0 ; index < 8 ; index++) {
+      for (byte index = 0 ; index < 8 ; index++) {
         dip[index] = dipSwitch.getBit(index);                       // read dipswitch
       }
       decoderAddressOld = decoderAddress;
-      for (char index = 0 ; index < 8 ; index++) {
+      for (byte index = 0 ; index < 8 ; index++) {
         if (dip[index] == true) decoderAddress |= (1 << index);     // forces nth bit of x to be 1.
         else  decoderAddress &= ~(1 << index);                      // forces nth bit of x to be 0.
       }
@@ -440,8 +444,8 @@ void callback(const MQTT::Publish& pub) {
       Serial.print("Msg received [");
       Serial.print(pub.topic());
       Serial.print(" - DEC, dotted] <== ");
-      for (char index = 0; index < (pub.payload_len()); index++) {
-        Serial.print(((char)pub.payload()[index]), DEC);
+      for (byte index = 0; index < (pub.payload_len()); index++) {
+        Serial.print(((byte)pub.payload()[index]), DEC);
         if (index < (pub.payload_len()) - 1) Serial.print(F("."));
       }
       Serial.println();

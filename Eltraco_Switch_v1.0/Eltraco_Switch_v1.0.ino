@@ -1,6 +1,10 @@
 /*
 
   changelog:
+                
+  dec 2017-2
+  "char" for numbers is WRONG!
+  change to byte
 
   dec 2017:
   new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
@@ -257,7 +261,7 @@ WiFiClient espClient;
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
 // do not use as ID: 1 and 9
-static char decoderId = 31;                              // also used in IP address decoder (check if IP address is available)
+static byte decoderId = 31;                              // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-SW-31";            // Hostname displayed in OTA port
 
 ///////////////////////
@@ -411,16 +415,16 @@ void ProcessOrder() {
 */
 void callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/ot")) {
-    if (((char)pub.payload()[2]) == (decoderId)) {
-      buf = ((char)pub.payload()[10]);                                                 // switching order is stored
-      bufId = ((char)pub.payload()[11]);                                               // pin to switch
+    if (((byte)pub.payload()[2]) == (decoderId)) {
+      buf = ((byte)pub.payload()[10]);                                                 // switching order is stored
+      bufId = ((byte)pub.payload()[11]);                                               // pin to switch
       if (debugFlag == true) {
         Serial.println();
         Serial.print("Msg received [");
         Serial.print(pub.topic());
         Serial.print(" - DEC, dotted] <== ");
-        for (char index = 0; index < (pub.payload_len()); index++) {
-          Serial.print(((char)pub.payload()[index]), DEC);
+        for (byte index = 0; index < (pub.payload_len()); index++) {
+          Serial.print(((byte)pub.payload()[index]), DEC);
           if (index < (pub.payload_len()) - 1) Serial.print(F("."));
         }
         Serial.println();
@@ -433,7 +437,7 @@ void callback(const MQTT::Publish& pub) {
         Serial.print(pub.topic());
         Serial.print(F("] "));
         Serial.print(F("switch decoder "));
-        Serial.print(((char) pub.payload()[2]));
+        Serial.print(((byte) pub.payload()[2]));
         Serial.print(F(" output "));
         Serial.print(bufId);
         Serial.print(F(" to "));

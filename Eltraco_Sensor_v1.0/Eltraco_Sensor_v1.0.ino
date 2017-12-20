@@ -1,6 +1,10 @@
 /*
 
   changelog:
+          
+  dec 2017-2
+  "char" for numbers is WRONG!
+  change to byte
 
   dec 2017:
   new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
@@ -254,7 +258,7 @@ WiFiClient espClient;
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
 // do not use as ID: 1 and 9
-static char decoderId = 162;                         // also used in IP address decoder (check if IP address is available)
+static byte decoderId = 162;                         // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-SNR-162";      // Hostname displayed in OTA port
 
 ///////////////////////
@@ -304,11 +308,11 @@ PubSubClient client(espClient, mosquitto);
 static const String topicPub = "rocnet/sr";                                   // rocnet/rs for sensor
 static const String topicSub = "rocnet/sr";                                   // rocnet/rs for sensor
 
-static const char sensorNr = 8;                                              // amount of sensors differs per decoder type
-static const char addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};            // sensor addresses for sensor decoder,
-static const char sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};       // sensor pins with each a pull-up resistor
+static const byte sensorNr = 8;                                              // amount of sensors differs per decoder type
+static const byte addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};            // sensor addresses for sensor decoder,
+static const byte sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};       // sensor pins with each a pull-up resistor
 static boolean sensorInverted[sensorNr] = {false, false, false, false, false, false, false, false}; // inverts external digital sensor value if true
-static const char analoguePin = A0;                                          // analogue pin
+static const byte analoguePin = A0;                                          // analogue pin
 //////////////////////////////////////// end of decoder function selection ///////////////////////////////////////////////////
 
 static const int msgLength = 12;                                             // message number of bytes
@@ -318,16 +322,16 @@ static boolean sendMsg = false;                                              // 
 static boolean sensorStatus[sensorNr];                                       // status sensor pins
 static boolean sensorStatusOld[sensorNr];                                    // old status sensor pins
 static unsigned long sensorProcessTime[sensorNr];                            // sensor timer
-static char sensorCountOff[sensorNr];                                        // counter negative sensor values
+static byte sensorCountOff[sensorNr];                                        // counter negative sensor values
 static boolean scan = false;                                                 // sensorvalue
-static const char scanDelay = 5;                                             // delay in sensor scan processing
-static const char scanNegativeNr = 15;                                       // number of negative scan values for negative sensorstatus
+static const byte scanDelay = 5;                                             // delay in sensor scan processing
+static const byte scanNegativeNr = 15;                                       // number of negative scan values for negative sensorstatus
 
 static unsigned long anaScanTime = 0;                                        // analogue pin timer
 static const unsigned int anaScanInterval = 20;
 static unsigned int anaVal = 0;
-static char anaStatus = 0;
-static char anaStatusOld = 1;
+static byte anaStatus = 0;
+static byte anaStatusOld = 1;
 
 static boolean debugFlag = true;                                             // display debug messages
 static boolean configFlag = true;                                            // control servoconfiguration
@@ -354,7 +358,7 @@ void setup() {
   msgOut[6] = 1;
   msgOut[7] = 4;
 
-  for (char index = 0; index < sensorNr; index++) {                          // initialising sensor pins
+  for (byte index = 0; index < sensorNr; index++) {                          // initialising sensor pins
     pinMode(sensor[index], INPUT_PULLUP);
   }
 
@@ -452,7 +456,7 @@ void ReadAna() {
 
 */
 void ScanSensor() {
-  for (char index = 0; index < sensorNr; index++) {
+  for (byte index = 0; index < sensorNr; index++) {
     if ( millis() > sensorProcessTime[index]) {
       sensorProcessTime[index] = millis() + scanDelay;
       sensorStatusOld[index] = sensorStatus[index];
@@ -492,8 +496,8 @@ void callback(const MQTT::Publish& pub) {
       Serial.print("Msg received [");
       Serial.print(pub.topic());
       Serial.print(" - DEC, dotted] <== ");
-      for (char index = 0; index < (pub.payload_len()); index++) {
-        Serial.print(((char)pub.payload()[index]), DEC);
+      for (byte index = 0; index < (pub.payload_len()); index++) {
+        Serial.print(((byte)pub.payload()[index]), DEC);
         if (index < (pub.payload_len()) - 1) Serial.print(F("."));
       }
       Serial.println();

@@ -1,7 +1,10 @@
 /*
 
-
   changelog:
+      
+  dec 2017-2
+  "char" for numbers is WRONG!
+  change to byte
   
   dec 2017:
   new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
@@ -39,7 +42,7 @@ WiFiClient espClient;
 #define WIFI_TX_POWER 0 // TX power of ESP module (0 -> 0.25dBm) (0...85)
 
 // do not use as ID: 1 and 9
-static char decoderId = 248;                         // also used in IP address decoder (check if IP address is available)
+static byte decoderId = 248;                         // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-Clock";        // Hostname displayed in OTA port
 
 ///////////////////////
@@ -92,9 +95,9 @@ static boolean debugFlag = true;                                            // d
 /////////////////////////////////////////// clock //////////////////////////
 
 // Use these variables to set the initial time
-static char hours = 8;
-static char minutes = 5;
-static char seconds = 30;
+static byte hours = 8;
+static byte minutes = 5;
+static byte seconds = 30;
 
 // How fast do you want the clock to spin? Set this to 1 for fun.
 // Set this to 1000 to get _about_ 1 second timing.
@@ -116,7 +119,7 @@ static int H_LENGTH;
 
 static unsigned long lastDraw = 0;
 
-static char keepAliveCounter = 0;
+static byte keepAliveCounter = 0;
 PubSubClient client(espClient, mosquitto);
 ///////////////////////////////////////////////////////////////set-up//////////////////////////////
 void setup() {
@@ -293,8 +296,8 @@ void callback(const MQTT::Publish& pub) {
       Serial.print("Msg received [");
       Serial.print(pub.topic());
       Serial.print(" - DEC, dotted] <== ");
-      for (char index = 0; index < (pub.payload_len()); index++) {
-        Serial.print(((char)pub.payload()[index]), DEC);
+      for (byte index = 0; index < (pub.payload_len()); index++) {
+        Serial.print(((byte)pub.payload()[index]), DEC);
         if (index < (pub.payload_len()) - 1) Serial.print(F("."));
       }
       Serial.println();
