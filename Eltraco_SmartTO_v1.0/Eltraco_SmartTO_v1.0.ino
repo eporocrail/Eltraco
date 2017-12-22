@@ -1,6 +1,7 @@
 /*
 
   changelog:
+  "2017-12-21" Software version display added
               
   dec 2017-2
   "char" for numbers is WRONG!
@@ -265,7 +266,8 @@ WiFiClient espClient;
 static byte turnoutNr1 = 21;                               // also used in IP address decoder (check if IP address is available)
 static byte turnoutNr2 = 22;
 static char wiFiHostname[] = "ELTRACO-ST-21";              // Hostname displayed in OTA port
-
+static String version = "2017-12-21";
+static String decoderType = "Double turnout";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -391,7 +393,7 @@ void setup() {
   system_phy_set_max_tpw(WIFI_TX_POWER); //set as lower TX power as possible
 
   WiFi.hostname(wiFiHostname);
-  setup_wifi();
+  SetupWifi();
 
   EEPROM.begin(512);
   if ((EEPROM.read(255) == 0xFF) && (EEPROM.read(256) == 0xFF)) {                 //eeprom empty, first run
@@ -441,7 +443,7 @@ void setup() {
 
   StartPosition();                                                               // move servosto initial position
 
-  client.set_callback(callback);
+  client.set_callback(Callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                      // Port defaults to 8266
@@ -483,7 +485,7 @@ void loop() {
   ScanSensor();
 
   if (!client.connected()) {                                                   // maintain connection with Mosquitto
-    reconnect();
+    Reconnect();
   }
   client.loop();                                                               // content of client.loop can not be moved to function
   if (sendMsg == true) {                                                       // set sendMsg = true  to transmit message
@@ -504,6 +506,36 @@ void loop() {
   }
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
+/*
+   SoftwareVersion
+
+    function : display on serial monitor decoder type and sofware version
+
+    called by: reconnect
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
+
 /*
 
    ScanSensor
@@ -603,7 +635,7 @@ byte Thrown(byte turnoutId) {
     servoMoveTime[turnoutId] = millis() + servoDelay[turnoutId];
     if (order.msgMove == false) {
       order.msgMove = true;
-      txMsgMove(order.targetId);
+      TxMsgMove(order.targetId);
     }
     if ((currentPosition[turnoutId]) == (relaisSwitchPoint[turnoutId])) digitalWrite(relais[turnoutId], HIGH);
   }
@@ -611,7 +643,7 @@ byte Thrown(byte turnoutId) {
     order.executed = true;
     if (order.msgStop == false) {
       order.msgStop = true;
-      txMsgMoveStop(order.targetId);
+      TxMsgMoveStop(order.targetId);
     }
   }
 } // end of Thrown
@@ -636,7 +668,7 @@ byte Straight(byte turnoutId) {
     servoMoveTime[turnoutId] = millis() + servoDelay[turnoutId];
     if (order.msgMove == false) {
       order.msgMove = true;
-      txMsgMove(order.targetId);
+      TxMsgMove(order.targetId);
     }
     if ((currentPosition[turnoutId]) == (relaisSwitchPoint[turnoutId])) digitalWrite(relais[turnoutId], LOW);
   }
@@ -644,7 +676,7 @@ byte Straight(byte turnoutId) {
     order.executed = true;
     if (order.msgStop == false) {
       order.msgStop = true;
-      txMsgMoveStop(order.targetId);
+      TxMsgMoveStop(order.targetId);
     }
   }
 } // end of Straight
@@ -762,7 +794,7 @@ void ReadEEPROM() {
    called by: Thrown, Straight
 
 */
-byte txMsgMove(byte turnoutId) {
+byte TxMsgMove(byte turnoutId) {
   msgOut[11] = addressSr[turnoutId];
   msgOut[10] = 1;
   sendMsg = true;
@@ -776,7 +808,7 @@ byte txMsgMove(byte turnoutId) {
    called by: Thrown, Straight
 
 */
-byte txMsgMoveStop(byte turnoutId) {
+byte TxMsgMoveStop(byte turnoutId) {
   msgOut[11] = addressSr[turnoutId];
   msgOut[10] = 0;
   sendMsg = true;
@@ -784,13 +816,13 @@ byte txMsgMoveStop(byte turnoutId) {
 
 /*
 
-   callback
+   Callback
 
    function : receive incoming message, test topic, test on recepient, select returning sensor messages, select servo configuration,
    select incoming turnout switch orders, select turnout number, store order into buffer.
 
 */
-void callback(const MQTT::Publish& pub) {
+void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/sr")) {
     forMe = false;
     for (byte index = 0; index < turnoutNr; index++) {
@@ -886,7 +918,7 @@ void callback(const MQTT::Publish& pub) {
       }
     }
   }
-} // end of callback
+} // end of Callback
 
 /*
    re-establish connection with MQTT clientID.
@@ -894,7 +926,7 @@ void callback(const MQTT::Publish& pub) {
    when Mosquitto not available try again after 5 seconds
 
 */
-void reconnect() {
+void Reconnect() {
   while (!client.connected()) {
     Serial.print("Establishing connection with Mosquitto ...");
     // Attempt to connect
@@ -903,9 +935,10 @@ void reconnect() {
       client.subscribe(topicSub1);                              // and resubscribe to topic 1
       client.subscribe(topicSub2);                              // and resubscribe to topic 2
       client.subscribe(topicSub3);                              // and resubscribe to topic 3
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
-      Serial.println(" try again in 1 second");
+      Serial.println(" try again in second");
       delay(1000);                                             // Wait 1 second before retrying
     }
   }
@@ -928,12 +961,12 @@ void StartPosition() {
   }
 } // end of StartPosition
 /*
-   setup_wifi
+   SetupWifi
 
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");
@@ -951,5 +984,5 @@ void setup_wifi() {
   Serial.print(F("hostname: "));
   Serial.println(WiFi.hostname());
 }
-// end of setup_wifi
+// end of SetupWifi
 

@@ -1,6 +1,7 @@
 /*
 
   changelog:
+  "2017-12-21" Software version display added
           
   dec 2017-2
   "char" for numbers is WRONG!
@@ -260,7 +261,8 @@ WiFiClient espClient;
 // do not use as ID: 1 and 9
 static byte decoderId = 162;                         // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-SNR-162";      // Hostname displayed in OTA port
-
+static String version = "2017-12-21";
+static String decoderType = "Sensor";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -308,15 +310,15 @@ PubSubClient client(espClient, mosquitto);
 static const String topicPub = "rocnet/sr";                                   // rocnet/rs for sensor
 static const String topicSub = "rocnet/sr";                                   // rocnet/rs for sensor
 
-static const byte sensorNr = 8;                                              // amount of sensors differs per decoder type
-static const byte addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};            // sensor addresses for sensor decoder,
-static const byte sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};       // sensor pins with each a pull-up resistor
+static const byte sensorNr = 8;                                               // amount of sensors differs per decoder type
+static const byte addressSr[sensorNr] = {1, 2, 3, 4, 5, 6, 7, 8};             // sensor addresses for sensor decoder,
+static const byte sensor[sensorNr] = {D0, D1, D2, D3, D4, D5, D6, D7};        // sensor pins with each a pull-up resistor
 static boolean sensorInverted[sensorNr] = {false, false, false, false, false, false, false, false}; // inverts external digital sensor value if true
-static const byte analoguePin = A0;                                          // analogue pin
+static const byte analoguePin = A0;                                           // analogue pin
 //////////////////////////////////////// end of decoder function selection ///////////////////////////////////////////////////
 
 static const int msgLength = 12;                                             // message number of bytes
-static byte msgOut[msgLength];                                               // outgoing messages
+static byte msgOut[msgLength];                                               // outgoing messages must be "byte"
 static boolean sendMsg = false;                                              // set true to publish message
 
 static boolean sensorStatus[sensorNr];                                       // status sensor pins
@@ -340,10 +342,10 @@ void setup() {
   Serial.begin(9600);
   Serial.println();
 
-  system_phy_set_max_tpw(WIFI_TX_POWER); //set as lower TX power as possible
+  system_phy_set_max_tpw(WIFI_TX_POWER);                                      //set TX power as low as possible
 
   WiFi.hostname(wiFiHostname);
-  setup_wifi();
+  SetupWifi();
 
   memset(sensorStatus, 0, sizeof(sensorStatus));                             // initialising arrays sensor decoder
   memset(sensorStatusOld, 0, sizeof(sensorStatusOld));
@@ -362,7 +364,7 @@ void setup() {
     pinMode(sensor[index], INPUT_PULLUP);
   }
 
-  client.set_callback(callback);
+  client.set_callback(Callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                  // Port defaults to 8266
@@ -394,15 +396,15 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();                                                         // OTA handle must stay here in loop
   yield();
-  
+
   ScanSensor();
-//  ReadAna();
+  //  ReadAna();
 
   if (!client.connected()) {                                                   // maintain connection with Mosquitto
-    reconnect();
+    Reconnect();
   }
   client.loop();                                                               // content of client.loop can not be moved to function
-if (sendMsg == true) {                                                       // set sendMsg = true  to transmit message
+  if (sendMsg == true) {                                                       // set sendMsg = true  to transmit message
     if (debugFlag == true) {
       Serial.println();
       Serial.print(F("Publish msg  ["));
@@ -414,12 +416,41 @@ if (sendMsg == true) {                                                       // 
       }
       Serial.println();
     }
-    if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) {     // message is published with qos2, highest 
+    if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) {     // message is published with qos2, highest
       Serial.println(F("fault publishing"));                                                 // guarantee for delivery of message to Mosquitto
     } else sendMsg = false;
   }
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
+/*
+   SoftwareVersion
+
+    function : display on serial monitor decoder type and sofware version
+
+    called by: reconnect
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
 /*
    ReadAna
 
@@ -462,9 +493,9 @@ void ScanSensor() {
       sensorStatusOld[index] = sensorStatus[index];
       scan = !digitalRead(sensor[index]);
       if ((sensorInverted[index]) == true) scan = ! scan;                             // inverting sensor value
-      if (scan == false) {
-        sensorCountOff[index]++;
-      }
+      if (scan == false) {                                                            // an amount of "scanNegativeNr" negative scans
+        sensorCountOff[index]++;                                                      // needs to be detected before sensorStatus
+      }                                                                               // is adapted
       if (scan == true) {
         sensorCountOff[index] = 0;
         sensorStatus[index] = true;
@@ -489,7 +520,8 @@ void ScanSensor() {
 
 
 */
-void callback(const MQTT::Publish& pub) {
+
+void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/sr")) {
     if (debugFlag == true) {
       Serial.println();
@@ -511,13 +543,14 @@ void callback(const MQTT::Publish& pub) {
    when Mosquitto not available try again after 5 seconds
 
 */
-void reconnect() {
+void Reconnect() {
   while (!client.connected()) {
     Serial.print("Establishing connection with Mosquitto ...");
     // Attempt to connect
     if (client.connect(MQTTclientId)) {
       Serial.println("connected");
-      client.subscribe(topicSub);                              // subscribe to topic 1
+      client.subscribe(topicSub);                              // subscribe to topic
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
       Serial.println(" try again in 1 second");
@@ -533,7 +566,7 @@ void reconnect() {
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");

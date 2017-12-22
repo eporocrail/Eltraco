@@ -1,6 +1,7 @@
 /*
 
   changelog:
+  "2017-12-21" Software version display added
             
   dec 2017-2
   "char" for numbers is WRONG!
@@ -94,7 +95,8 @@ char wiFiHostname[] = "ServoTool";                           // Hostname display
 
 static const String topicPub = "rocnet/cf";                   // rocnet/cf for servo tool
 static const String topicSub = "rocnet/cf";                   // rocnet/cf for servo tool
-
+static String version = "2017-12-21";
+static String decoderType = "Servo tool";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -197,9 +199,9 @@ void setup() {
   system_phy_set_max_tpw(WIFI_TX_POWER); //set as lower TX power as possible
 
   WiFi.hostname(wiFiHostname);
-  setup_wifi();
+  SetupWifi();
 
-  client.set_callback(callback);
+  client.set_callback(Callback);
 
   memset(msgOut, 0, sizeof(msgOut));
   memset(dip, 0, sizeof(dip));
@@ -289,6 +291,35 @@ void loop() {
   }
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
+/*
+   SoftwareVersion
+
+    function : display on serial monitor decoder type and sofware version
+
+    called by: reconnect
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
 
 /*
    SelectAddress
@@ -310,7 +341,7 @@ void SelectAddress() {
       }
       decoderAddressOld = decoderAddress;
       for (byte index = 0 ; index < 8 ; index++) {
-        if (dip[index] == true) decoderAddress |= (1 << index);     // forces nth bit of x to be 1.
+        if (dip[index] == 1) decoderAddress |= (1 << index);        // forces nth bit of x to be 1.
         else  decoderAddress &= ~(1 << index);                      // forces nth bit of x to be 0.
       }
       if (debugFlag == true) {
@@ -437,7 +468,7 @@ void Flash() {
 
 
 */
-void callback(const MQTT::Publish& pub) {
+void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/cf")) {
     if (debugFlag == true) {
       Serial.println();
@@ -466,6 +497,7 @@ void Reconnect() {
     if (client.connect(MQTTclientId)) {
       Serial.println("connected");
       client.subscribe(topicSub);                              // subscribe
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
       Serial.println(" try again in 1 second");
@@ -481,7 +513,7 @@ void Reconnect() {
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");

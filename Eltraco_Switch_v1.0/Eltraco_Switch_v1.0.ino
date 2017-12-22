@@ -1,6 +1,7 @@
 /*
 
   changelog:
+  "2017-12-21" Software version display added
                 
   dec 2017-2
   "char" for numbers is WRONG!
@@ -263,7 +264,8 @@ WiFiClient espClient;
 // do not use as ID: 1 and 9
 static byte decoderId = 31;                              // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-SW-31";            // Hostname displayed in OTA port
-
+static String version = "2017-12-21";
+static String decoderType = "Switch";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -310,7 +312,7 @@ IPAddress subnet(255, 255, 255, 0);                                          // 
 PubSubClient client(espClient, mosquitto);
 //////////////////////////////////////// decoder function selection ///////////////////////////////////////////////////
 
-static const String topicSub = "rocnet/ot";                                  // rocnet/ot for turnout control
+static const String topicSub1 = "rocnet/ot";                                  // rocnet/ot for switch control
 
 static const byte outputNr = 8;                                             // 8 switches differs per decoder
 static const byte output[outputNr] = {D0, D1, D2, D3, D4, D5, D6, D7};      // output pins
@@ -333,7 +335,8 @@ void setup() {
   system_phy_set_max_tpw(WIFI_TX_POWER); //set as lower TX power as possible
 
   WiFi.hostname(wiFiHostname);
-  setup_wifi();
+  SetupWifi();
+
 
   for (byte index = 0; index < outputNr; index++) {                         // initialising output pins
     pinMode(output[index], OUTPUT);
@@ -345,7 +348,7 @@ void setup() {
     digitalWrite(output[index], LOW);
   }
 
-  client.set_callback(callback);
+  client.set_callback(Callback);
 
   //// begin of OTA ////////
   ArduinoOTA.setPort(8266);                                                 // Port defaults to 8266
@@ -377,15 +380,45 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();                                                   // OTA handle must stay here in loop
   yield();
-  
+
   ProcessOrder();
 
   if (!client.connected()) {                                             // maintain connection with Mosquitto
-    reconnect();
+    Reconnect();
   }
   client.loop();                                                         // content of client.loop can not be moved to function
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
+/*
+   SoftwareVersion
+
+    function : display on serial monitor decoder type and sofware version
+
+    called by: reconnect
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
+
 
 /*
    ProcessOrder
@@ -408,12 +441,12 @@ void ProcessOrder() {
 
 /*
 
-   callback
+   Callback
 
    function : receive incoming message, test topic, test recipient
 
 */
-void callback(const MQTT::Publish& pub) {
+void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/ot")) {
     if (((byte)pub.payload()[2]) == (decoderId)) {
       buf = ((byte)pub.payload()[10]);                                                 // switching order is stored
@@ -446,7 +479,7 @@ void callback(const MQTT::Publish& pub) {
       }
     }
   }
-} // end of callback
+} // end of Callback
 
 /*
    re-establish connection with MQTT clientID.
@@ -454,13 +487,14 @@ void callback(const MQTT::Publish& pub) {
    when Mosquitto not available try again after 5 seconds
 
 */
-void reconnect() {
+void Reconnect() {
   while (!client.connected()) {
     Serial.print("Establishing connection with Mosquitto ...");
     // Attempt to connect
     if (client.connect(MQTTclientId)) {
       Serial.println("connected");
-      client.subscribe(topicSub);                              // subscribe to topic
+      client.subscribe(topicSub1);                              // subscribe to topic 1
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
       Serial.println(" try again in 1 second");
@@ -471,12 +505,12 @@ void reconnect() {
 // end of reconnect
 
 /*
-   setup_wifi
+   SetupWifi
 
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");
@@ -494,6 +528,6 @@ void setup_wifi() {
   Serial.print(F("hostname: "));
   Serial.println(WiFi.hostname());
 }
-// end of setup_wifi
+// end of SetupWifi
 
 

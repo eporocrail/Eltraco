@@ -1,6 +1,7 @@
 /*
 
   changelog:
+   "2017-12-21" Software version display added
       
   dec 2017-2
   "char" for numbers is WRONG!
@@ -44,7 +45,8 @@ WiFiClient espClient;
 // do not use as ID: 1 and 9
 static byte decoderId = 248;                         // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-Clock";        // Hostname displayed in OTA port
-
+static String version = "2017-12-21";
+static String decoderType = "Clock";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -129,8 +131,8 @@ void setup() {
   system_phy_set_max_tpw(WIFI_TX_POWER);               //set TX power as low as possible
 
   WiFi.hostname(wiFiHostname);
-  setup_wifi();
-  client.set_callback(callback);
+  SetupWifi();
+  client.set_callback(Callback);
 
   /////////////////////////////////////////// clock /////////////////////////
   oled.begin();                                        // Initialize the OLED
@@ -138,11 +140,11 @@ void setup() {
   oled.clear(ALL);                                     // Clear the library's display buffer
   oled.display();                                      // Display what's in the buffer (splashscreen)
 
-  initClockVariables();
+  InitClockVariables();
 
   oled.clear(ALL);
-  drawFace();
-  drawArms(hours, minutes, seconds);
+  DrawFace();
+  DrawArms(hours, minutes, seconds);
   oled.display();                                      // display the memory buffer drawn
 
 }
@@ -154,12 +156,42 @@ void loop() {
   Clock();
 
   if (!client.connected()) {                           // maintain connection with Mosquitto
-    reconnect();
+    Reconnect();
   }
   client.loop();                                       // content of client.loop can not be moved to function
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
-void initClockVariables() {
+/*
+   SoftwareVersion
+
+    function : display on serial monitor decoder type and sofware version
+
+    called by:
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
+
+void InitClockVariables() {
   // Calculate constants for clock face component positions:
   oled.setFontType(0);
   //  CLOCK_RADIUS = min(MIDDLE_X, MIDDLE_Y) - 1;
@@ -184,24 +216,24 @@ void Clock() {
   if (lastDraw + CLOCK_SPEED < millis()) {
     lastDraw = millis();
     // Add a second, update minutes/hours if necessary:
-    updateTime();
+    UpdateTime();
 
     // Draw the clock:
     if (keepAliveCounter < 75) {
       oled.clear(PAGE);                               // Clear the buffer
-      drawFace();                                     // Draw the face to the buffer
-      drawArms(hours, minutes, seconds);              // Draw arms to the buffer
+      DrawFace();                                     // Draw the face to the buffer
+      DrawArms(hours, minutes, seconds);              // Draw arms to the buffer
       oled.display();                                 // Draw the memory buffer
     } else {
       oled.clear(PAGE);                               // Clear the buffer
-      drawFace2();                                    // Draw the face to the buffer
+      DrawFace2();                                    // Draw the face to the buffer
       oled.display();                                 // Draw the memory buffer
     }
   }
 }
 
 
-void updateTime() {
+void UpdateTime() {
   if (keepAliveCounter < 75) {
     keepAliveCounter++;
     seconds++;                                        // Increment seconds
@@ -215,7 +247,7 @@ void updateTime() {
 }
 
 // Draw the clock's three arms: seconds, minutes, hours.
-void drawArms(int h, int m, int s) {
+void DrawArms(int h, int m, int s) {
   double midHours;                                     // this will be used to slightly adjust the hour hand
   static int hx, hy, mx, my, sx, sy;
 
@@ -239,8 +271,8 @@ void drawArms(int h, int m, int s) {
   oled.line(MIDDLE_X, MIDDLE_Y, MIDDLE_X + sx, MIDDLE_Y + sy);
 
   m = map(m, 0, 60, 0, 360);                          // map the 0-60, to "360 degrees"
-  mx = M_LENGTH * cos(PI * ((float)m) / 180);  
-  my = M_LENGTH * sin(PI * ((float)m) / 180); 
+  mx = M_LENGTH * cos(PI * ((float)m) / 180);
+  my = M_LENGTH * sin(PI * ((float)m) / 180);
   // draw the minute hand
   oled.line(MIDDLE_X, MIDDLE_Y, MIDDLE_X + mx, MIDDLE_Y + my);
 
@@ -248,13 +280,13 @@ void drawArms(int h, int m, int s) {
   h *= 5;                                            // Get hours and midhours to the same scale
   h += midHours;                                     // add hours and midhours
   h = map(h, 0, 60, 0, 360);                         // map the 0-60, to "360 degrees"
-  hx = H_LENGTH * cos(PI * ((float)h) / 180);  
-  hy = H_LENGTH * sin(PI * ((float)h) / 180);  
+  hx = H_LENGTH * cos(PI * ((float)h) / 180);
+  hy = H_LENGTH * sin(PI * ((float)h) / 180);
   oled.line(MIDDLE_X, MIDDLE_Y, MIDDLE_X + hx, MIDDLE_Y + hy);  // draw the hour hand
 }
 
 // Draw an analog clock face
-void drawFace() {
+void DrawFace() {
   // Draw the clock border
   oled.circle(MIDDLE_X, MIDDLE_Y, CLOCK_RADIUS);
 
@@ -271,7 +303,7 @@ void drawFace() {
 }
 
 // Draw an analog clock face
-void drawFace2() {
+void DrawFace2() {
   oled.setFontType(0);                               // set font type 0, please see declaration in SFE_MicroOLED.cpp
   oled.setCursor(POS_9_X, POS_9_Y);
   oled.print("no synch");
@@ -279,13 +311,13 @@ void drawFace2() {
 
 /*
 
-   callback
+   Callback
 
    function : receive incoming message, test topic, test recipient
 
 
 */
-void callback(const MQTT::Publish& pub) {
+void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/ck")) {
     hours = ((byte)pub.payload()[12]);
     minutes = ((byte)pub.payload()[13]);
@@ -303,7 +335,7 @@ void callback(const MQTT::Publish& pub) {
       Serial.println();
     }
   }
-} // end of callback
+} // end of Callback
 
 /*
    re-establish connection with MQTT clientID.
@@ -311,13 +343,14 @@ void callback(const MQTT::Publish& pub) {
    when Mosquitto not available try again after 5 seconds
 
 */
-void reconnect() {
+void Reconnect() {
   while (!client.connected()) {
     Serial.print("Establishing connection with Mosquitto ...");
     // Attempt to connect
     if (client.connect(MQTTclientId)) {
       Serial.println("connected");
       client.subscribe(topicSub1);                              // subscribe to topic 1
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
       Serial.println(" try again in 1 second");
@@ -325,15 +358,15 @@ void reconnect() {
     }
   }
 }
-// end of reconnect
+// end of Reconnect
 
 /*
-   setup_wifi
+   SetupWifi
 
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");
@@ -351,5 +384,5 @@ void setup_wifi() {
   Serial.print(F("hostname: "));
   Serial.println(WiFi.hostname());
 }
-// end of setup_wifi
+// end of SetupWifi
 

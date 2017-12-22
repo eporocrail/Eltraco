@@ -1,7 +1,8 @@
 /*
 
   changelog:
-        
+  "2017-12-21" Software version display added
+      
   dec 2017-2
   "char" for numbers is WRONG!
   change to byte
@@ -44,7 +45,8 @@ static byte decoderId = 149;                                      // also used i
 static char wiFiHostname[] = "ELTRACO-Receiver";                  // Hostname displayed in OTA port
 static const String topicSub = "rocnet/#";
 //static const String topicSub = "/#";                              // select topic from which message are received
-
+static String version = "2017-12-21";
+static String decoderType = "MQTT receiver Broker retrieval";
 ///////////////////////
 /*
    Define which Wifi Network is to be used
@@ -69,13 +71,13 @@ static const char *password = "PASWRD12";                                  // pa
 
 
 static const char *MQTTclientId = (wiFiHostname);                           // MQTT client Id
-IPAddress mosquitto(192, 168, 2, 254);                                      // default IP address Mosquitto to be replaced with retrieved version
+IPAddress mosquitto(192, 168, 2, 1);                                      // default IP address Mosquitto to be replaced with retrieved version
 uint16_t mqttPort = 1883;                                                   // default mosquitto port to be replaced with retrieved version
 IPAddress decoder(192, 168, 2, decoderId);                                  // IP address decoder
 IPAddress gateway(192, 168, 2, 1);                                          // IP address gateway
 IPAddress subnet(255, 255, 255, 0);                                         // subnet masker
 PubSubClient client(espClient, mosquitto);
-void callback(const MQTT::Publish& pub);
+void Callback(const MQTT::Publish& pub);
 /////////////////////////////////////////// IP-address retrieval /////////////////////////
 typedef struct {
   IPAddress ip;
@@ -99,13 +101,13 @@ void setup() {
 
   system_phy_set_max_tpw(WIFI_TX_POWER);                     //set TX power as low as possible
 
-  setup_wifi();
-  client.set_callback(callback);
+  SetupWifi();
+  client.set_callback(Callback);
 
   //start the UDP client, to retrieve the broker address from Rocrail
   espUdpClient.begin(udpPort);
 
-  //broker address request.
+  //broker address request. BLOCKING FUNCTION, doesn't return if Rocrail doesn't send the IP (adapted)
   myMqttBrokerDet = detectIpPort();
   if (brokerDefault == false) {
     Serial.print(F("using retrieved data"));
@@ -121,19 +123,47 @@ void setup() {
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
 void loop() {
   if (!client.connected()) {                                                   // maintain connection with Mosquitto
-    reconnect();
+    Reconnect();
   }
   client.loop();                                                               // content of client.loop can not be moved to function
 }
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
+/*
+   SoftwareVersion
 
+    function : display on serial monitor decoder type and sofware version
+
+    called by: reconnect
+
+*/
+void SoftwareVersion() {
+  Serial.println();
+  Serial.print("\n===================================================================");
+  Serial.print("\n");
+  Serial.print("\n        EEEEE  LL   TTTTTT  RRR        A        CCC     OO");
+  Serial.print("\n        EE     LL     TT    RR RR    AA AA     CC     OO  OO");
+  Serial.print("\n        EEE    LL     TT    RRR     AAAAAAA   CC     OO    OO");
+  Serial.print("\n        EE     LL     TT    RR RR   AA   AA    CC     OO  OO");
+  Serial.print("\n        EEEEE  LLLLL  TT    RR  RR  AA   AA     CCC     OO");
+  Serial.print("\n");
+  Serial.print("\n===================================================================");
+  Serial.println();
+  Serial.print("\n                    decoder: ");
+  Serial.println(decoderType);
+  Serial.println();
+  Serial.print("\n                    version: ");
+  Serial.print(version);
+  Serial.println();
+  Serial.print("\n-------------------------------------------------------------------");
+  Serial.println();
+} // end of SoftwareVersion
 /*
    callback
 
    function : receive incoming message
 
 */
-void callback(const MQTT::Publish& pub) {
+void Callback(const MQTT::Publish& pub) {
   Serial.println();
   Serial.print("Msg received [");
   Serial.print(pub.topic());
@@ -151,13 +181,14 @@ void callback(const MQTT::Publish& pub) {
    when Mosquitto not available try again after 5 seconds
 
 */
-void reconnect() {
+void Reconnect() {
   while (!client.connected()) {
     Serial.print("Establishing connection with Mosquitto ...");
     // Attempt to connect
     if (client.connect(MQTTclientId)) {
       Serial.println("connected");
       client.subscribe(topicSub);                              // and resubscribe to topic 1
+      SoftwareVersion();
     } else {
       Serial.print("no Broker");
       Serial.println(" try again in 1 second");
@@ -173,7 +204,7 @@ void reconnect() {
    connect to network, install static IP address
 
 */
-void setup_wifi() {
+void SetupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");
@@ -258,7 +289,7 @@ mqttBrokerDet_t detectIpPort(void) {
     if (!bAddressFound) {
       delay(1000);
       if (retrievalCounter == 0) {
-        Serial.println(); 
+        Serial.println();
         Serial.println("retrieving MQTT broker data from Rocrail");
       }
       retrievalCounter++;
@@ -276,4 +307,4 @@ mqttBrokerDet_t detectIpPort(void) {
   } while (!bAddressFound);
 
   return (mqttBr);
-} // end of mqttBrokerDet_t detectIpPort(void)
+} // end of MqttBrokerDet_t detectIpPort(void)
