@@ -1,6 +1,7 @@
 /*
 
   changelog:
+  "2018-01-03" incoming switch order adjusted.
   "2017-12-21" Software version display added
                 
   dec 2017-2
@@ -264,7 +265,7 @@ WiFiClient espClient;
 // do not use as ID: 1 and 9
 static byte decoderId = 31;                              // also used in IP address decoder (check if IP address is available)
 static char wiFiHostname[] = "ELTRACO-SW-31";            // Hostname displayed in OTA port
-static String version = "2017-12-21";
+static String version = "2018-01-03";
 static String decoderType = "Switch";
 ///////////////////////
 /*
@@ -449,7 +450,7 @@ void ProcessOrder() {
 void Callback(const MQTT::Publish& pub) {
   if ((pub.topic()) == ("rocnet/ot")) {
     if (((byte)pub.payload()[2]) == (decoderId)) {
-      buf = ((byte)pub.payload()[10]);                                                 // switching order is stored
+      buf = ((byte)pub.payload()[8]);                                                 // switching order is stored
       bufId = ((byte)pub.payload()[11]);                                               // pin to switch
       if (debugFlag == true) {
         Serial.println();
