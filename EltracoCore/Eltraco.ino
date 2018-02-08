@@ -14,7 +14,7 @@
 #include "Notes.h"
 #include "Defaults.h"
 
-ESP8266WebServer server = ESP8266WebServer(80);       // create a web server on port 80
+ESP8266WebServer server(80);                          // create a web server on port 80
 WebSocketsServer webSocket = WebSocketsServer(81);    // create a websocket server on port 81
 File fsUploadFile;                                    // a File variable to temporarily store the received file
 Servo servo[2];
