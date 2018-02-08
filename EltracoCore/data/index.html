@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>eltraco settings</title>
+    <link href='main.css' rel='stylesheet' type='text/css'>
+    <meta name="theme-color" content="#00878f">
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+    <script src="Eltraco.js" type="text/javascript"></script>
+    <style>
+   table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 2px;
+    text-align: center;
+}
+</style>
+</head>
+    <center>
+        <header>
+             <h1>ELTRACO configuration<br>decoder settings</h1>
+        </header>
+        <body>
+        
+        <div>
+        <table>
+            <tr>
+                <td style="width:25%"><p>Resubmit lower fields</p>
+                    <button id="resFields" style="background-color:#99ffcc" onclick="showFields()">Resubmit</button>
+                </td>
+                <td style="width:75%"><a id="lnkServo" href="servo.html">servo settings</a></td>
+            </tr>
+        </table>
+        </div>
+        
+        <div>
+        <p>IP-address</>
+        <table>
+        <tr>
+            <td>
+                <p>Decoder</></p>
+                <input id="ipAdrDecoder">
+                <button id="ipDec" style="background-color:#99ffcc" onclick="ipDecoder()">Submit</button>
+                <p id="resDecoder"></p>
+            </td>
+            <td>
+                <p>Gateway</></p>
+                <input id="ipAdrGateway">
+                <button id="ipGat" style="background-color:#99ffcc" onclick="ipGateway()">Submit</button>
+                <p id="resGateway"></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Mosquitto</></p>
+                <input id="ipAdrMosquitto">
+                <button id="ipMos" style="background-color:#99ffcc" onclick="ipMosquitto()">Submit</button>
+                <p id="resMosquitto"></p>
+            </td>
+        </tr>
+        </table>
+        </div>
+
+        <div>
+        <p>decoder type</>
+        <table>
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+        <tr>
+            <td style="width:25%">
+                <p>Double turnout</p>
+                <button id="decDouble" style="background-color:#99ffcc" onclick="typeDouble()">Submit</button>
+            </td>
+            <td style="width:25%">
+                <p>Single turnout</p>
+                <button id="decSingle" style="background-color:#99ffcc" onclick="typeSingle()">Submit</button>
+            </td>
+            <td style="width:25%">
+                <p>Switch</p>
+                <button id="decSwitch" style="background-color:#99ffcc" onclick="typeSwitch()">Submit</button>
+            </td>
+            <td style="width:25%">
+                <p>Sensor</p>
+                <button id="decSensor" style="background-color:#99ffcc" onclick="typeSensor()">Submit</button>
+            </td>
+        </tr>
+        </table>
+        </div>
+
+        <div>
+        <p>select other WiFi network</>
+        <table>
+    
+            <tr>
+                <td style="width:50%">
+                    <p>No</p>
+                    <button id="wfNo" style="background-color:#99ffcc" onclick="wifiNo()">Submit</button>
+                </td>
+                <td style="width:50%">
+                    <p>Yes</p>
+                    <button  id="wfYes" style="background-color:#99ffcc" onclick="wifiYes()">Submit</button>
+                </td>
+            </tr>
+        </table>
+        </div>
+        
+
+        <div>
+        <p>display debug message on serial monitor</>
+        <table>
+
+            <tr>
+                <td style="width:50%">
+                    <p>Yes</p>
+                    <button id="debYes" style="background-color:#99ffcc" onclick="debugYes()">Submit</button>
+                </td>
+                <td style="width:50%">
+                    <p>No</p>
+                    <button id="debNo" style="background-color:#99ffcc" onclick="debugNo()">Submit</button>
+                </td>
+            </tr>
+        </table>
+        </div>
+
+        </body>
+    </center>
+
+</html>

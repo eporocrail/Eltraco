@@ -1,6 +1,8 @@
 /*
-
+    This software is no longer supported. Replaced by one single package "eltraco"
+    
   changelog:
+  "2018-02-03" website for configuration decoder added. Single software package.
   "2017-12-21" Software version display added
           
   dec 2017-2

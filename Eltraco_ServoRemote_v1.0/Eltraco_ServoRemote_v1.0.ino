@@ -1,5 +1,12 @@
 /*
-
+    
+        This software is no longer supported. The servo remote is discarded.
+        This function is incorporated into the "Elatraco configuration website"
+        on each decoder.
+    
+  changelog:
+  "2018-02-03" website for configuration decoder added. Single software package.
+    
   changelog:
   "2017-12-21" Software version display added
             

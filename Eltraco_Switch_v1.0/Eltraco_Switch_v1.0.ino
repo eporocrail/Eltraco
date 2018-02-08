@@ -1,4 +1,8 @@
 /*
+        This software is no longer supported. Replaced by one single package "eltraco"
+    
+  changelog:
+  "2018-02-03" website for configuration decoder added. Single software package.
 
   changelog:
   "2018-01-03" incoming switch order adjusted.

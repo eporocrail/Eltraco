@@ -1,4 +1,22 @@
+/*
 
+  changelog:
+  "2018-01-22" One software package. Decodertype selection. Userdata via webserver.
+
+  "2018-01-20" Website for adjustment servo added. Now it is possible to adjust servos of turnout decoders
+  with smartphone or tablet. A webserver resides on each turnout decoder and presents a webpage when
+  the user points the browser to the IP-address or the decoder name. By means of a slider the angles are adjusted.
+  Pushing a button acknowledges each angle.
+
+  "2017-12-21" Software version display added
+
+  dec 2017:
+  new MQTT library. supports qos2. link for library: https://github.com/Imroy/pubsubclient
+  Length of MQTT outgoing message equal to Rocnet message length.
+  "yield()" in loop.
+  display of published and received messages on serial monitor harmonised.
+
+  /*************************************************************************************
 
   Aim is to develop a switching and signaling system for model railroad track control.
   Communication is wireless.
@@ -7,10 +25,10 @@
   MQTT broker is used.
 
   Hardware setup is as simple as possible. In stead of having one hardware module for diffferent applications
-  the design aims for three different PCB's specific to task where the Wemos has to be slotted into.
+  the design aims for different PCB's specific to task where the Wemos has to be slotted into.
 
-  Sofware is modularised. It is gathered into one software package. The functionality of each separate decoder
-  is configured by means of a website genrated by the decoder.
+  Sofware is modularised. Instead of having one sketch for diffferent applications the design aims for
+  different sketches specific to task.
 
   *********************************************************************************************
 
@@ -31,87 +49,58 @@
 
   eltraco decoder     Function
 
-  eltraco sensor decoder    Scanning 9 sensors
-  eltraco switch decoder    Controlling 8 outputs
-  eltraco turnout decoder   Controlling 2 turnouts
+  eltraco sensor decoder            Scanning 9 sensors
+  eltraco switch decoder            Controlling 8 outputs
+  eltraco double turnout decoder    Controlling 2 turnouts
+  eltraco single turnout decoder    Controlling 1 turnout and scanning 4 external sensors
+  eltraco display decoder           Displaying text or showing the Rocrail time with an analogue clock
 
   GPIO usage:
 
   Decoder  pins     function
 
   Sensor   D0 .. D7     digital sensor
-  
            A0           analogue sensor
 
   Switch   D0 .. D7     output (switch)
 
   Double   D0    relais 1
-  
   Turnout  D1    current detector 1
-           
            D2    current detector 2
-           
            D3    not used
-           
            D4    not used
-           
            D5    relais 2
-           
            D6    servo 1
-           
            D7    servo 2
-           
            D8    not used
-           
            A0    not used
-           
-  Single   D0    relais 1
-  
-  Turnout  D1    current detector 1
-           
+
+  Single   D0    relais
+  Turnout  D1    current detector
            D2    sensor
-           
            D3    sensor
-           
            D4    sensor
-           
            D5    sensor
-           
-           D6    servo 1
-           
+           D6    servo
            D7    not used
-           
            D8    not used
-           
-           A0    not used         
+           A0    not used
 
   ROCNET PROTOCOL
 
   packet payload content:
   byte 1  : groupId
-  
   byte 2  : receiveIdH
-  
   byte 3  : receiveIdL
-  
   byte 4  : sendIdH
-  
   byte 5  : sendIdL
-  
   byte 6  : group
-  
   byte 7  : code
-  
   byte 8  : length
-  
   byte 9  : data1
-  
   byte 10 : data2
-  
   byte 11 : data3
-  
   byte 12 : data4
-  
 
   --byte 1 only used for large network. Normally 0.
 
@@ -120,7 +109,6 @@
   --byte 3 Rocrail Server default Id is 1
 
   Broadcast Id = 0
-  
   Decoder   Id = 2 ... 255   Not used for switching decoder
 
   --byte 4 only used when more than 255 decoders. Normally 0.
@@ -133,33 +121,22 @@
 
   groups
   code   description     remark                     MQTT topic
-  
   0      Host            Rocrail                    rocnet/ht
-  
   7      Clock Fast      Clock                      rocnet/ck
-  
   8      Sensor          Position determination     rocnet/sr
-  
   9      Output                                     rocnet/ot
 
 
   --byte 7
 
   Code:  bit 7 = 0
-  
      bit 6 and bit 5 represent Type of code
-     
      bit 4 .. 0:  5 bit command 0 .. 31
-     
 
   Type: 0 - test
-  
   1 - request
-  
   2 - event
-  
   3 - reply
-  
 
   Sensor
 
@@ -169,27 +146,20 @@
 
   ¹) Address of the reporting loco.
   The sensor ID is set in the header; Sender.
-  
 
   Output
 
   Type   Value
-  
   switch   0
-  
   light    1
-  
   servo    2
 
   Actions
   code description data 1  data 2  data 3
-  
   0      off       type    value   address
-  
   1      on        type    value   address
 
   --byte 8 Netto number of following data bytes.
-  
 
   At a speed of 200 KmH a loc runs 64 mm per second in scale H0 and 35 mm per second in scale N.
   To come to a reliable detection reaction a point sensor must be scanned at least 20 times per second in H0
@@ -204,7 +174,7 @@
 
   Addressing falls apart in a WiFi address, being an IP-address and a Rocnet address.
 
-  Rocnet:
+  Addressing:
 
   In the Rocnet protocol (IdH*256 + IdL) represents the Rocnet Node Number. This number ranges from 1 .. 65536.
   It represents the "Bus" number.
@@ -215,22 +185,14 @@
   For eltraco an I/O pin is addressed by the combination of receiveIdL and data3/data4.
   This way each individual pin of each individual decoder can be addressed.
 
-  A second way to address an IO pin is using a "fixed" receiveIdL and discriminating by means of data3/data4.
-  Using this method provides in eltraco the possibility to address 255 turnouts by a consecutive number only.
-  The default receiveIdL of Rocrail is "9". This receiveIdL is used to control turnouts. These addresses are
-  used by the servo-tool to adjust the servo of a turnout.
-
   IP-address:
   The following IP-adress range is available:
   192.168.xxx.xxx
 
 
   IP-addres: Router 192.168.xxx.251
-  
-             Servo tool 192.168.xxx.252
-             
+             First install Decoder  192.168.2.252
              Command Station 192.168.xxx.253
-             
              Mosquitto 192.168.xxx.254
 
   For the decoders are available 192.168.xxx.2 - 192.168.2.250
@@ -271,17 +233,12 @@
   Sensor decoder:
   Each decoder has eight digital and one analogue sensor.
 
-  Each decoder is allocated a unique IP-address out of the range 192.168.xxx.2 - 192.168.2.250.
-  The last triplet is the Rocrail "Bus" number.
-
   The sensors report using "Address" numbers 1 .. 9.
+  Use of the analogue sensor is to be programmed by the user.
 
   Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
-  
          port number is inserted into field "Address"
-         
          e.g. (192.168.0.076 sensor 5 is inserted as Bus 76 Address 5)
-         
 
   Output decoder
   Each decoder has eight outputs.
@@ -292,11 +249,8 @@
   The outputs are switched using "Address" numbers 1 .. 8.
 
   Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
-  
          The individual port number is inserted into field "Address"
-         
          e.g. (192.168.0.201 port 3 is inserted as Bus 201 Address 3)
-         
 
   During testing it turned out that move orders from Rocrail arived so fast that an ongoing movement was
   interrupted. To cater for this incoming turnout orders are stored into a buffer. When ongoing movement is concluded,
@@ -361,10 +315,12 @@
   by simply uploading a new file.
   Would the variable be in EEPROM than a new software upload would be required.
 
-  The rest of the variables stay in EEPROM because EEPROM is a random access memory while
+  The rest of the variables stay in EEPROM because EEPROM is a random access memory where
   ISPFFS is serial access memory.
   
 
   Author: E. Postma
 
   February 2018
+
+   *****/
