@@ -227,11 +227,11 @@
 
   IP-addres: Router 192.168.xxx.251
   
-             Servo tool 192.168.xxx.252
+             Configuration website 192.168.xxx.252
              
-             Command Station 192.168.xxx.253
+             Command Station       192.168.xxx.253
              
-             Mosquitto 192.168.xxx.254
+             Mosquitto             192.168.xxx.254
 
   For the decoders are available 192.168.xxx.2 - 192.168.2.250
 
