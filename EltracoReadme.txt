@@ -7,7 +7,6 @@ It consists of hardware and software.
 The hardware components are:
 Wifi router
 Raspberry Pi
-Servo tool
 Smart Turnout Decoder
 Sensor Decoder
 LED Decoder
@@ -26,15 +25,16 @@ Functions performed:
 
 Wireless control of turnouts:
 the decoder moves the turnout
-signals this movement by means of a software alert
 switches polarity of driving current
+signals this movement by means of a software alert
 signals occupation by means of current detection
 
 Wireless occupation detection:
 the decoder advertises track occupation by means of
 hall sensor and/or by means of current detection sensor
+other sensors or switches are accommodated easily
 
-Wireless on/off switching of LEDs
+Wireless on/off switching of outputs
 
 OVERVIEW
 
@@ -60,4 +60,4 @@ Information on how to make the hardware and how to use the system with Rocrail i
 my user pages of the Rocrail Website.
 
 Ellard Postma
-September 2017
+February 2018
