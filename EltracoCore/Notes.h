@@ -27,8 +27,8 @@
   Hardware setup is as simple as possible. In stead of having one hardware module for diffferent applications
   the design aims for different PCB's specific to task where the Wemos has to be slotted into.
 
-  Sofware is modularised. Instead of having one sketch for diffferent applications the design aims for
-  different sketches specific to task.
+  Sofware is modularised. The modules are contained in one single package. Configuration of the function
+  of a single decoder is done by the built-in Eltraco configuration website.
 
   *********************************************************************************************
 
