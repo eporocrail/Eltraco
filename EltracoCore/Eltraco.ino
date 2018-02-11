@@ -956,6 +956,9 @@ void ConvertGroup2Member(byte lgth) {
       break;
   }
   ReadEEPROMConfig();
+  Serial.print(" -------- Reboot required ");
+  Serial.println("----------");
+  ESP.reset();
 }
 
 
