@@ -13,7 +13,7 @@ static boolean debugFlag = true;                 // display debug messages
 
 static boolean connectedMosquitto=true;
 
-static String version = "2018-02-11";                     // software version
+static String version = "2018-02-13";                     // software version
 
 char ClientName[80];
 

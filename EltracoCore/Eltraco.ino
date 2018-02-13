@@ -37,6 +37,7 @@ void setup() {
   StartMQTT();                                   // Start MQTT client
   FixedFields();                                 // load parts of outgoing message with fixed values
   startUpTimer = millis();
+  DisplayDebug();
 }
 ///////////////////////////////////////////////////////////////end of set-up////////////////////////
 /////////////////////////////////////////////////////////////// program loop ////////////////////////////////
@@ -62,6 +63,9 @@ void loop() {
       break;
     case 3:                   // sensor
       ScanSensor();
+      break;
+    default:
+      Serial.println("Should not happen - Loop");
       break;
   }
   if (!client.connected()) {                    // maintain connection with Mosquitto
@@ -348,9 +352,7 @@ void StartUp() {
       buf.orderNew = true;
       order.executed = true; // do NOT remove!!!!!!!
       SelectConfig();
-      if (debugFlag == true) {
-        SoftwareVersion();
-      }
+      SoftwareVersion();
     }
   }
 } // end of StartUp()
@@ -435,6 +437,9 @@ void SelectConfig() {
         sensorInverted[index] = false;
       }
       ConfigIO();
+      break;
+    default:
+      Serial.println("Should not happen - SelectConfig");
       break;
   }
 } //end of SelectConfig()
@@ -824,7 +829,7 @@ void ConvertGroup(byte lgth) {
       ConvertGroup2Member(lgth);
       break;
     default:
-      if (debugFlag == true) Serial.println("Notdefined");
+      Serial.println("Should not happen - ConvertGroup");
       break;
   }
 } // end of ConvertGroup()
@@ -841,33 +846,24 @@ void ConvertGroup0Member(byte lgth) {
   switch  (webMsg[3] - 48) {
     case 0:                                      // decoder
       WriteEEPROMSingle(5, convertIpSub(lgth));
-      if (debugFlag == true) {
-        Serial.print("Decoder - ");
-        Serial.print(decoderId);
-        Serial.println();
-      }
+      Serial.print(" -------- Decoder - ");
+      Serial.print(decoderId);
+      Serial.println(" ----------");
       break;
     case 1:                                      // gateway
       WriteEEPROMSingle(6, convertIpSub(lgth));
-      if (debugFlag == true) {
-        Serial.print("Gateway - ");
-        Serial.print(subIpGateway);
-        Serial.println();
-      }
+      Serial.print(" -------- Gateway - ");
+      Serial.print(subIpGateway);
+      Serial.println(" ----------");
       break;
     case 2:                                      // mosquitto
       WriteEEPROMSingle(4, convertIpSub(lgth));
-      if (debugFlag == true) {
-        Serial.print("Mosquitto - ");
-        Serial.print(subIpMosquitto);
-        Serial.println();
-      }
+      Serial.print(" -------- Mosquitto - ");
+      Serial.print(subIpMosquitto);
+      Serial.println(" ----------");
       break;
     default:
-      if (debugFlag == true) {
-        Serial.print("Notdefined");
-        Serial.println();
-      }
+      Serial.println("Should not happen - ConvertGroup0Member");
       break;
   }
   ReadEEPROMConfig();
@@ -887,35 +883,24 @@ void ConvertGroup1Member(byte lgth) {
   if (debugFlag == true) Serial.print("Decoder: ");
   switch  (webMsg[3] - 48) {
     case 0:
-      if (debugFlag == true) {
-        Serial.print("Double turnout");
-        Serial.println();
-      }
+      Serial.print(" -------- Double turnout ----------");
+      Serial.println();
       break;
     case 1:
-      if (debugFlag == true) {
-        Serial.print("Single turnout");
-        Serial.println();
-      }
+      Serial.print(" -------- Single turnout ----------");
+      Serial.println();
       break;
     case 2:
-      if (debugFlag == true) {
-        Serial.print("Switch");
-        Serial.println();
-        break;
-      case 3:
-        if (debugFlag == true) {
-          Serial.print("Sensor");
-          Serial.println();
-        }
-        break;
-      default:
-        if (debugFlag == true) {
-          Serial.println("Notdefined");
-          Serial.println();
-        }
-        break;
-      }
+      Serial.print(" -------- Switch ----------");
+      Serial.println();
+      break;
+    case 3:
+      Serial.print(" -------- Sensor ----------");
+      Serial.println();
+      break;
+    default:
+      Serial.println("Should not happen - ConvertGroup1Member");
+      break;
   }
   ReadEEPROMConfig();
   Serial.print(" -------- Reboot required ");
@@ -934,25 +919,18 @@ void ConvertGroup2Member(byte lgth) {
   switch  (webMsg[3] - 48) {
     case 0:
       WriteFileFFS(webMsg[4] - 48);
-      if (debugFlag == true) {
-        Serial.print("New WiFi network - ");
-        Serial.print(webMsg[4] - 48);
-        Serial.println();
-      }
+      Serial.print(" -------- New WiFi network - ");
+      Serial.print(webMsg[4] - 48);
+      Serial.println(" ----------");
       break;
     case 1:
       WriteEEPROMSingle(8, (webMsg[4] - 48));
-      if (debugFlag == true) {
-        Serial.print("Debug - ");
-        Serial.print(webMsg[4] - 48);
-        Serial.println();
-      }
+      Serial.print(" -------- Debug - ");
+      Serial.print(webMsg[4] - 48);
+      Serial.println(" ----------");
       break;
     default:
-      if (debugFlag == true) {
-        Serial.println("Notdefined");
-        Serial.println();
-      }
+      Serial.println("Should not happen - ConvertGroup2Member");
       break;
   }
   ReadEEPROMConfig();
@@ -1339,33 +1317,30 @@ void ReadEEPROMConfig() {
   }
   decoderType = value[7];
   debugFlag = value[8];
-  //  resetWifi = value[9];
-  if (debugFlag == true) {
-    Serial.println();
-    Serial.print(" -------- Config memory content ");
-    Serial.println("----------");
-    Serial.print("          Straight position servo 1: ");
-    Serial.println(value[0]);
-    Serial.print("          Thrown position servo 1..: ");
-    Serial.println(value[1]);
-    Serial.print("          Straight position servo 2: ");
-    Serial.println(value[2]);
-    Serial.print("          Thrown position servo 2..: ");
-    Serial.println(value[3]);
-    Serial.print("          IP-triplet Mosquitto.....: ");
-    Serial.println(value[4]);
-    Serial.print("          IP-triplet Decoder.......: ");
-    Serial.println(value[5]);
-    Serial.print("          IP-triplet Gateway.......: ");
-    Serial.println(value[6]);
-    Serial.print("          Decoder type.............: ");
-    Serial.println(value[7]);
-    Serial.print("          Debug flag...............: ");
-    Serial.println(value[8]);
-    Serial.print(" -------- Config memory content ");
-    Serial.println("----------");
-    Serial.println();
-  }
+  Serial.println();
+  Serial.print(" -------- Config memory content ");
+  Serial.println("----------");
+  Serial.print("          Straight position servo 1: ");
+  Serial.println(value[0]);
+  Serial.print("          Thrown position servo 1..: ");
+  Serial.println(value[1]);
+  Serial.print("          Straight position servo 2: ");
+  Serial.println(value[2]);
+  Serial.print("          Thrown position servo 2..: ");
+  Serial.println(value[3]);
+  Serial.print("          IP-triplet Mosquitto.....: ");
+  Serial.println(value[4]);
+  Serial.print("          IP-triplet Decoder.......: ");
+  Serial.println(value[5]);
+  Serial.print("          IP-triplet Gateway.......: ");
+  Serial.println(value[6]);
+  Serial.print("          Decoder type.............: ");
+  Serial.println(value[7]);
+  Serial.print("          Debug flag...............: ");
+  Serial.println(value[8]);
+  Serial.print(" -------- Config memory content ");
+  Serial.println("----------");
+  Serial.println();
 } // end of ReadEEPROM()
 
 /*
@@ -1572,6 +1547,27 @@ void WriteFileFFS(byte b) {
   Serial.println(" ----------");
   Serial.println();
   f.close();
+}
+
+/*
+   DisplayDebug()
+
+   function : signal status of debugFlag
+   called by: setup
+
+*/
+void DisplayDebug() {
+  if (debugFlag == 0) {
+    Serial.println();
+    Serial.print(" -------- debug messages are NOT displayed on serial monitor ");
+    Serial.println(" ----------");
+    Serial.println();
+  } else {
+    Serial.println();
+    Serial.print(" -------- debug messages ARE displayed on serial monitor ");
+    Serial.println(" ----------");
+    Serial.println();
+  }
 }
 ///////////////////////////////////////////////////////////// end of Start-up functions ///////////////////////
 

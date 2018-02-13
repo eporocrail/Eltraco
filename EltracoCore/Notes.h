@@ -1,7 +1,13 @@
 /*
+ * 
+  changelog:
+  "2018-02-13". Display debugFlag during boot. Display all config data during boot.
+  Serial monitor messages harmonised.
+
+  https://github.com/Links2004/arduinoWebSockets websockets library needs to be installed.
 
   changelog:
-  "2018-01-22" One software package. Decodertype selection. Userdata via webserver.
+  "2018-01-22" One software package. Decodertype selection. Userdate via webserver.
 
   "2018-01-20" Website for adjustment servo added. Now it is possible to adjust servos of turnout decoders
   with smartphone or tablet. A webserver resides on each turnout decoder and presents a webpage when
@@ -15,6 +21,9 @@
   Length of MQTT outgoing message equal to Rocnet message length.
   "yield()" in loop.
   display of published and received messages on serial monitor harmonised.
+
+  Eltraco_SmartTO_v1.0
+  Ready for publication
 
   /*************************************************************************************
 
