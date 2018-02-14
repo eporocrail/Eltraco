@@ -25,17 +25,6 @@ function linkHide(){
     }
 }
 
-function showFields(){
-document.getElementById("debNo").style.visibility = "visible";
-document.getElementById("debYes").style.visibility = "visible";
-document.getElementById("wfNo").style.visibility = "visible";
-document.getElementById("wfYes").style.visibility = "visible";
-document.getElementById("decDouble").style.visibility = "visible";
-document.getElementById("decSingle").style.visibility = "visible";
-document.getElementById("decSwitch").style.visibility = "visible";
-document.getElementById("decSensor").style.visibility = "visible";
-}
-
 function debugNo(){
     connection.send("#02"+"1"+"0");
     debugOut();
@@ -118,7 +107,7 @@ function ipDecoder() {
 function ipGateway() {
     var x, text;
     x = document.getElementById("ipAdrGateway").value;
-    if (isNaN(x) || x < 1 || x > 249) {
+    if (isNaN(x) || x < 1 || x > 254) {
         text = "Input not valid";
     } else {
         text = "Input OK";
@@ -130,7 +119,7 @@ function ipGateway() {
 function ipMosquitto() {
     var x, text;
     x = document.getElementById("ipAdrMosquitto").value;
-    if (isNaN(x) || x < 1 || x > 249) {
+    if (isNaN(x) || x < 1 || x > 254) {
         text = "Input not valid";
     } else {
         text = "Input OK";

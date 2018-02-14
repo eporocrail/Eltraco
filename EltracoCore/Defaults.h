@@ -13,7 +13,7 @@ static boolean debugFlag = true;                 // display debug messages
 
 static boolean connectedMosquitto=true;
 
-static String version = "2018-02-13";                     // software version
+static String version = "2018-02-14";                     // software version
 
 char ClientName[80];
 
@@ -75,6 +75,7 @@ static boolean sendMsg = false;                                             // s
 static boolean configFlag = true;                                          // control servoconfiguration
 static boolean firstOrder = true;
 static String text="";
+static boolean printFlagOnce=false;
 
 struct {
   byte targetId = 0;

@@ -10,6 +10,7 @@
 #include <FS.h>
 #include <WebSocketsServer.h>
 #include <WiFiManager.h>
+#include <ESP8266FtpServer.h>
 
 #include "Notes.h"
 #include "Defaults.h"
@@ -20,6 +21,8 @@ File fsUploadFile;                                    // a File variable to temp
 Servo servo[2];
 WiFiClient espClient;
 PubSubClient client(espClient);
+FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
+
 /////////////////////////////////////////////////////////////// set-up////////////////////////
 void setup() {
   Serial.begin(115200);
@@ -34,6 +37,7 @@ void setup() {
   StartMDNS();                                   // Start the mDNS responder
   StartWebServer();                              // Start a HTTP server with a file read handler and an upload handler
   StartOTA();                                    // Start Over The Air functionality
+  StartFtp();                                    // Start FTP server
   StartMQTT();                                   // Start MQTT client
   FixedFields();                                 // load parts of outgoing message with fixed values
   startUpTimer = millis();
@@ -46,6 +50,7 @@ void loop() {
   yield();                                      // allow processor to handle WiFi
   webSocket.loop();                             // constantly check for websocket events
   server.handleClient();                        // run the web server
+  ftpSrv.handleFTP();                            // handle for FTP
   StartUp();
   switch (decoderType) {
     case 0:                   // double turnout
@@ -65,7 +70,7 @@ void loop() {
       ScanSensor();
       break;
     default:
-      Serial.println("Should not happen - Loop");
+      PrintDefault("Should not happen - Loop");
       break;
   }
   if (!client.connected()) {                    // maintain connection with Mosquitto
@@ -92,6 +97,17 @@ void loop() {
 ///////////////////////////////////////////////////////////// end of program loop ///////////////////////
 
 ///////////////////////////////////////////////////////////// Core Eltraco functions ///////////////////////
+void PrintDefault(String text) {
+  if (printFlagOnce == false) {
+    printFlagOnce = true;
+    Serial.println();
+    Serial.print(" -------- ");
+    Serial.print(text);
+    Serial.println(" ----------");
+    Serial.println();
+  }
+}
+
 /*
 
    CheckBuffer
@@ -439,7 +455,7 @@ void SelectConfig() {
       ConfigIO();
       break;
     default:
-      Serial.println("Should not happen - SelectConfig");
+      PrintDefault("Should not happen - SelectConfig");
       break;
   }
 } //end of SelectConfig()
@@ -798,7 +814,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       }
       break;
     case WStype_TEXT:
-      Serial.printf("[%u] get Text: %s\n", num, payload);
+      Serial.printf(" -------- message from web client: %s", payload);
+      Serial.println(" ----------");
       for (byte index = 0; index < length; index++) {
         webMsg[index] = payload[index];
       }
@@ -829,7 +846,7 @@ void ConvertGroup(byte lgth) {
       ConvertGroup2Member(lgth);
       break;
     default:
-      Serial.println("Should not happen - ConvertGroup");
+      PrintDefault("Should not happen - ConvertGroup");
       break;
   }
 } // end of ConvertGroup()
@@ -846,29 +863,22 @@ void ConvertGroup0Member(byte lgth) {
   switch  (webMsg[3] - 48) {
     case 0:                                      // decoder
       WriteEEPROMSingle(5, convertIpSub(lgth));
-      Serial.print(" -------- Decoder - ");
-      Serial.print(decoderId);
-      Serial.println(" ----------");
+      PrintTextVar("Decoder", decoderId);
       break;
     case 1:                                      // gateway
       WriteEEPROMSingle(6, convertIpSub(lgth));
-      Serial.print(" -------- Gateway - ");
-      Serial.print(subIpGateway);
-      Serial.println(" ----------");
+      PrintTextVar("Gateway", subIpGateway);
       break;
     case 2:                                      // mosquitto
       WriteEEPROMSingle(4, convertIpSub(lgth));
-      Serial.print(" -------- Mosquitto - ");
-      Serial.print(subIpMosquitto);
-      Serial.println(" ----------");
+      PrintTextVar("Mosquitto", subIpMosquitto);
       break;
     default:
-      Serial.println("Should not happen - ConvertGroup0Member");
+      PrintDefault("Should not happen - ConvertGroup0Member");
       break;
   }
   ReadEEPROMConfig();
-  Serial.print(" -------- Reboot required ");
-  Serial.println("----------");
+  PrintText("Reboot required");
   ESP.reset();
 } // end of ConvertGroup0Member()
 
@@ -879,32 +889,36 @@ void ConvertGroup0Member(byte lgth) {
 
 */
 void ConvertGroup1Member(byte lgth) {
-  WriteEEPROMSingle(7, (webMsg[3] - 48));
-  if (debugFlag == true) Serial.print("Decoder: ");
-  switch  (webMsg[3] - 48) {
+  byte x;
+  switch (lgth) {
+    case 4:
+      x = webMsg[3] - 48;
+      break;
+    case 5:
+      x = (webMsg[3] - 48) * 10 + (webMsg[4] - 48);
+      break;
+  }
+  WriteEEPROMSingle(7, x);
+  Serial.print("Decoder: ");
+  switch  (x) {
     case 0:
-      Serial.print(" -------- Double turnout ----------");
-      Serial.println();
+      PrintText("Double turnout");
       break;
     case 1:
-      Serial.print(" -------- Single turnout ----------");
-      Serial.println();
+      PrintText("Single turnout");
       break;
     case 2:
-      Serial.print(" -------- Switch ----------");
-      Serial.println();
+      PrintText("Switch");
       break;
     case 3:
-      Serial.print(" -------- Sensor ----------");
-      Serial.println();
+      PrintText("Sensor");
       break;
     default:
-      Serial.println("Should not happen - ConvertGroup1Member");
+      PrintDefault("Should not happen - ConvertGroup1Member");
       break;
   }
   ReadEEPROMConfig();
-  Serial.print(" -------- Reboot required ");
-  Serial.println("----------");
+  PrintText("Reboot required");
   ESP.reset();
 } // end of ConvertGroup1Member()
 
@@ -915,30 +929,25 @@ void ConvertGroup1Member(byte lgth) {
 
 */
 void ConvertGroup2Member(byte lgth) {
+  byte x = (webMsg[4] - 48);
   if (debugFlag == true) Serial.print("Flag: ");
-  switch  (webMsg[3] - 48) {
+  switch  (x) {
     case 0:
-      WriteFileFFS(webMsg[4] - 48);
-      Serial.print(" -------- New WiFi network - ");
-      Serial.print(webMsg[4] - 48);
-      Serial.println(" ----------");
+      WriteFileFFS(x);
+      PrintTextVar("New WiFi network", x);
       break;
     case 1:
-      WriteEEPROMSingle(8, (webMsg[4] - 48));
-      Serial.print(" -------- Debug - ");
-      Serial.print(webMsg[4] - 48);
-      Serial.println(" ----------");
+      WriteEEPROMSingle(8, x);
+      PrintTextVar("Debug", x);
       break;
     default:
-      Serial.println("Should not happen - ConvertGroup2Member");
+      PrintDefault("Should not happen - ConvertGroup2Member");
       break;
   }
   ReadEEPROMConfig();
-  Serial.print(" -------- Reboot required ");
-  Serial.println("----------");
+  PrintText("Reboot required");
   ESP.reset();
 }
-
 
 /*
 
@@ -1006,8 +1015,7 @@ void StartPosition() {
 void StartSPIFFS() {
   SPIFFS.begin();
   Serial.println();
-  Serial.print(" -------- SPIFFS started. Content: ");
-  Serial.println("----------");
+  PrintText("SPIFFS started. Content:");
   {
     Dir dir = SPIFFS.openDir("/");
     while (dir.next()) {
@@ -1015,9 +1023,7 @@ void StartSPIFFS() {
       size_t fileSize = dir.fileSize();
       Serial.printf("          File: %s, size: %s\r\n", fileName.c_str(), FormatBytes(fileSize).c_str());
     }
-    Serial.print(" -------- SPIFFS content");
-    Serial.println(" ----------");
-    Serial.println();
+    PrintText("SPIFFS started. Content:");
   }
 } // end of StartSPIFFS()
 
@@ -1031,10 +1037,9 @@ void StartSPIFFS() {
 void StartWebSocket() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
-  Serial.println();
-  Serial.print(" -------- WebSocket server started ");
-  Serial.println("----------");
+  PrintText("WebSocket server started");
 } // end of StartWebSocket()
+
 
 /*
    StartMDNS()
@@ -1047,12 +1052,12 @@ void StartMDNS() {
   CreateName();
   MDNS.begin(ClientName);
   Serial.println();
-  Serial.print(" -------- mDNS responder started. ");
-  Serial.print("URL: http://");
+  Serial.print(" -------- mDNS responder started. URL: http://");
   Serial.print(ClientName);
   Serial.print(".local");
   Serial.println(" ----------");
 } // end of StartMDNS()
+
 
 /*
    StartWebServer()
@@ -1089,9 +1094,7 @@ void StartOTA() {
   ArduinoOTA.setHostname(ClientName);               // Hostname defaults to esp8266-[ChipID]
   //ArduinoOTA.setPassword((const char *)"123");    // No authentication by default
   ArduinoOTA.onStart([]() {
-    Serial.println();
-    Serial.print(" -------- OTA started ");
-    Serial.println(" ----------");
+    PrintText("OTA started");
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\nEnd");
@@ -1259,6 +1262,17 @@ void StartWifi() {
   Serial.print(WiFi.localIP());
   Serial.println(" ----------");
 } // end of StartWifi()
+
+/*
+   StartFtp()
+
+   function : start FTP server
+
+*/
+void StartFtp() {
+  ftpSrv.begin("eltraco", "eltraco");   //username, password for ftp.  set ports in ESP8266FtpServer.h  (default 21, 50009 for PASV)
+  PrintText("FTP server started. Username 'eltraco', password 'eltraco'");
+}
 
 /*
    StartMQTT()
@@ -1490,38 +1504,19 @@ void ReadFileFFS() {
   File f = SPIFFS.open("/wifi.txt", "r");
   byte cntr = 0;
   if (!f) {
-    Serial.print(" -------- File doesn't exist. ");
-    Serial.println(" ----------");
+    PrintText("File doesn't exist.");
     // open the file in write mode
     File f = SPIFFS.open("/wifi.txt", "w");
     if (!f) {
-      Serial.print(" -------- NOT able to create file. ");
-      Serial.println(" ----------");
+      PrintText("NOT able to create file.");
     } else {
       f.println("0");
-      Serial.print(" -------- File created. ");
-      Serial.println(" ----------");
+      PrintText("File created.");
     }
   } else {
     String in = f.readStringUntil('n');
     resetWifi = (in.toInt());
-    Serial.print(" -------- WiFi reset on SPIFFS has value: ");
-    Serial.print(resetWifi);
-    Serial.println(" ----------");
-    Serial.println();
-    /*
-        while ((f.available())&& (cntr=0)) {
-          //Lets read line by line from the file
-          String in = f.readStringUntil('n');
-          resetWifi = (in.toInt());
-          Serial.print(" -------- WiFi reset on SPIFFS has value: ");
-          Serial.print(resetWifi);
-          Serial.println(" ----------");
-          Serial.println();
-          cntr++;
-        }
-    */
-
+    PrintTextVar("WiFi reset on SPIFFS has value: ", resetWifi);
   }
   f.close();
 }
@@ -1541,11 +1536,7 @@ void WriteFileFFS(byte b) {
   f = SPIFFS.open("/wifi.txt", "r");
   String in = f.readStringUntil('n');
   boolean val = (in.toInt());
-  Serial.println();
-  Serial.print(" -------- WiFi reset on SPIFFS has value: ");
-  Serial.print(val);
-  Serial.println(" ----------");
-  Serial.println();
+  PrintTextVar("WiFi reset on SPIFFS has value: ", val);
   f.close();
 }
 
@@ -1558,15 +1549,38 @@ void WriteFileFFS(byte b) {
 */
 void DisplayDebug() {
   if (debugFlag == 0) {
-    Serial.println();
-    Serial.print(" -------- debug messages are NOT displayed on serial monitor ");
-    Serial.println(" ----------");
-    Serial.println();
+    PrintText("display debug messages on serial monitor OFF");
   } else {
-    Serial.println();
-    Serial.print(" -------- debug messages ARE displayed on serial monitor ");
-    Serial.println(" ----------");
-    Serial.println();
+    PrintText("display debug messages on serial monitor ON");
+  }
+}
+
+/*
+   PrintText()
+
+   function : print formatted text to serial monitor
+
+*/
+void PrintText(char* text) {
+  Serial.printf(" -------- %s ---------- \n", text);
+  Serial.println();
+}
+
+/*
+   PrintTextVar()
+
+   function : print formatted text and variable to serial monitor
+
+*/
+void PrintTextVar(char* text, int val) {
+  Serial.printf(" -------- % s - % i ---------- \n", text, val);
+  Serial.println();
+}
+
+void PrintDefault(char* text) {
+  if (printFlagOnce == false) {
+    printFlagOnce = true;
+    PrintText(text);
   }
 }
 ///////////////////////////////////////////////////////////// end of Start-up functions ///////////////////////

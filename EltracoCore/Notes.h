@@ -1,6 +1,9 @@
 /*
  * 
-  changelog:
+  changelog: 
+  "2018-02-14"
+  changelog: added FTP server from https://github.com/nailbuster/esp8266FTPServer
+  
   "2018-02-13". Display debugFlag during boot. Display all config data during boot.
   Serial monitor messages harmonised.
 
