@@ -929,16 +929,15 @@ void ConvertGroup1Member(byte lgth) {
 
 */
 void ConvertGroup2Member(byte lgth) {
-  byte x = (webMsg[4] - 48);
-  if (debugFlag == true) Serial.print("Flag: ");
-  switch  (x) {
+  Serial.print("Flag: ");
+  switch  ((webMsg[3] - 48)) {
     case 0:
-      WriteFileFFS(x);
-      PrintTextVar("New WiFi network", x);
+      WriteFileFFS((webMsg[4] - 48));
+      PrintTextVar("New WiFi network", (webMsg[4] - 48));
       break;
     case 1:
-      WriteEEPROMSingle(8, x);
-      PrintTextVar("Debug", x);
+      WriteEEPROMSingle(8, (webMsg[4] - 48));
+      PrintTextVar("Debug", (webMsg[4] - 48));
       break;
     default:
       PrintDefault("Should not happen - ConvertGroup2Member");
@@ -1271,7 +1270,7 @@ void StartWifi() {
 */
 void StartFtp() {
   ftpSrv.begin("eltraco", "eltraco");   //username, password for ftp.  set ports in ESP8266FtpServer.h  (default 21, 50009 for PASV)
-  PrintText("FTP server started. Username 'eltraco', password 'eltraco'");
+  PrintText("FTP server started. Username 'eltraco', password 'eltraco', portnumber '21' ");
 }
 
 /*
