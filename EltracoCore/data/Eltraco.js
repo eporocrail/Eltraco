@@ -17,7 +17,7 @@ function linkShow(){
     document.getElementById("lnkServo").style.visibility = "visible";
 }
 
-function linkHide(){
+function linkHideServo(){
     if (decoderType > 1){
         document.getElementById("lnkServo").style.visibility = "hidden";
     }else{
@@ -27,67 +27,119 @@ function linkHide(){
 
 function debugNo(){
     connection.send("#02"+"1"+"0");
-    debugOut();
+    coreOut();
 }
 
 function debugYes(){
     connection.send("#02"+"1"+"1");
-    debugOut();
-}
-
-function debugOut(){
-document.getElementById("debNo").style.visibility = "hidden";
-document.getElementById("debYes").style.visibility = "hidden";
+    coreOut();
 }
 
 function wifiNo(){
     connection.send("#02"+"0"+"0");
-    wifiOut();
+    coreOut();
 }
 
 function wifiYes(){
     connection.send("#02"+"0"+"1");
-    wifiOut();
-}
-
-function wifiOut(){
-document.getElementById("wfNo").style.visibility = "hidden";
-document.getElementById("wfYes").style.visibility = "hidden";
+    coreOut();
 }
 
 function typeDouble(){
     decoderType="0";
     connection.send("#01"+"0");
-    typeOut();
-    linkHide();
+    coreOut();
+    linkHideServo();
 }
 
 function typeSingle(){
     decoderType="1";
     connection.send("#01"+"1");
-    typeOut();
-    linkHide();
+    coreOut();
+    linkHideServo();
 }
 
 function typeSwitch(){
     decoderType="2";
     connection.send("#01"+"2");
-    typeOut();
-    linkHide();
+    coreOut();
+    linkHideServo();
 }
 
 function typeSensor(){
     decoderType="3";
     connection.send("#01"+"3");
-    typeOut();
-    linkHide();
+    coreOut();
+    linkHideServo();
 }
 
-function typeOut(){
+function typeClock(){
+    decoderType="11";
+    connection.send("#01"+"11");
+    accOut();
+}
+
+function typeGCA145(){
+    decoderType="12";
+    connection.send("#01"+"12");
+    accOut();
+}
+
+function typeFyRfid(){
+    decoderType="13";
+    connection.send("#01"+"13");
+    accOut();
+}
+
+function typeRcvr(){
+    decoderType="14";
+    connection.send("#01"+"14");
+    accOut();
+}
+
+function accWfNo(){
+    connection.send("#02"+"0"+"0");
+    accOut();
+}
+
+function accWfYes(){
+    connection.send("#02"+"0"+"1");
+    accOut();
+}
+
+function accDebugNo(){
+    connection.send("#02"+"1"+"0");
+    accOut();
+}
+
+function accDebugYes(){
+    connection.send("#02"+"1"+"1");
+    accOut();
+}
+
+function coreOut(){
 document.getElementById("decDouble").style.visibility = "hidden";
 document.getElementById("decSingle").style.visibility = "hidden";
 document.getElementById("decSwitch").style.visibility = "hidden";
 document.getElementById("decSensor").style.visibility = "hidden";
+document.getElementById("wfNo").style.visibility = "hidden";
+document.getElementById("wfYes").style.visibility = "hidden";
+document.getElementById("debNo").style.visibility = "hidden";
+document.getElementById("debYes").style.visibility = "hidden";
+document.getElementById("ipDec").style.visibility = "hidden";
+document.getElementById("ipGat").style.visibility = "hidden";
+document.getElementById("ipMos").style.visibility = "hidden";
+}
+
+function accOut(){
+document.getElementById("decClock").style.visibility = "hidden";
+document.getElementById("decGCA145").style.visibility = "hidden";
+document.getElementById("decFyRfid").style.visibility = "hidden";
+document.getElementById("decRcvr").style.visibility = "hidden";
+document.getElementById("accWfNo").style.visibility = "hidden";
+document.getElementById("accWfYes").style.visibility = "hidden";
+document.getElementById("accDebNo").style.visibility = "hidden";
+document.getElementById("accDebYes").style.visibility = "hidden";
 }
 
 function ipDecoder() {
@@ -100,6 +152,7 @@ function ipDecoder() {
     } else {
         text = "Input OK";
         connection.send("#00"+"0"+x);
+        coreOut();
     }
     document.getElementById("resDecoder").innerHTML = text;
 }
@@ -107,11 +160,12 @@ function ipDecoder() {
 function ipGateway() {
     var x, text;
     x = document.getElementById("ipAdrGateway").value;
-    if (isNaN(x) || x < 1 || x > 254) {
+    if (isNaN(x) || x < 1 || x > 249) {
         text = "Input not valid";
     } else {
         text = "Input OK";
         connection.send("#00"+"1"+x);
+        coreOut();
     }
     document.getElementById("resGateway").innerHTML = text;
 }
@@ -119,11 +173,12 @@ function ipGateway() {
 function ipMosquitto() {
     var x, text;
     x = document.getElementById("ipAdrMosquitto").value;
-    if (isNaN(x) || x < 1 || x > 254) {
+    if (isNaN(x) || x < 1 || x > 249) {
         text = "Input not valid";
     } else {
         text = "Input OK";
         connection.send("#00"+"2"+x);
+        coreOut();
     }
     document.getElementById("resMosquitto").innerHTML = text;
 }
