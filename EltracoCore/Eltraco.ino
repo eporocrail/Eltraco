@@ -12,7 +12,6 @@
 #include <WiFiManager.h>
 #include <ESP8266FtpServer.h>
 
-#include "Notes.h"
 #include "Defaults.h"
 
 ESP8266WebServer server(80);
@@ -90,7 +89,10 @@ void loop() {
       Serial.println();
     }
     if (client.publish(MQTT::Publish(topicPub, msgOut, msgLength).set_qos(2)) != true) {     // message is published with qos2, highest
-      Serial.println(F("fault publishing"));                                                 // guarantee for delivery of message to Mosquitto
+      if (serialOnce == false) {
+        Serial.println(F("fault publishing"));                                                 // guarantee for delivery of message to Mosquitto
+        serialOnce = true;
+      }
     } else sendMsg = false;
   }
 }
@@ -226,27 +228,28 @@ void ScanSensor() {
 
 */
 byte Thrown(byte toNmbr) {
-  currentPosition[toNmbr] = servo[toNmbr].read();
-  if ((currentPosition[toNmbr]) != (servoPos[toNmbr][1]) && millis() >= servoMoveTime[toNmbr]) {
-    if (inverted[toNmbr] == true) {
-      servo[toNmbr].write((currentPosition[toNmbr]) - 1);
-    } else servo[toNmbr].write((currentPosition[toNmbr]) + 1);
-    servoMoveTime[toNmbr] = millis() + servoDelay[toNmbr];
-    if (order.msgMove == false) {
-      order.msgMove = true;
-      TxMsgMove(addressSr[toNmbr]);
+  if (toNmbr != 255) {
+    currentPosition[toNmbr] = servo[toNmbr].read();
+    if ((currentPosition[toNmbr]) != (servoPos[toNmbr][1]) && millis() >= servoMoveTime[toNmbr]) {
+      if (inverted[toNmbr] == true) {
+        servo[toNmbr].write((currentPosition[toNmbr]) - 1);
+      } else servo[toNmbr].write((currentPosition[toNmbr]) + 1);
+      servoMoveTime[toNmbr] = millis() + servoDelay[toNmbr];
+      if (order.msgMove == false) {
+        order.msgMove = true;
+        TxMsgMove(addressSr[toNmbr]);
+      }
+      if ((currentPosition[toNmbr]) == (relaisSwitchPoint[toNmbr])) digitalWrite(relais[toNmbr], HIGH);
     }
-    if ((currentPosition[toNmbr]) == (relaisSwitchPoint[toNmbr])) digitalWrite(relais[toNmbr], HIGH);
-  }
-  if ((currentPosition[toNmbr]) == (servoPos[toNmbr][1])) {
-    order.executed = true;
-    if (order.msgStop == false) {
-      order.msgStop = true;
-      TxMsgMoveStop(addressSr[toNmbr]);
+    if ((currentPosition[toNmbr]) == (servoPos[toNmbr][1])) {
+      order.executed = true;
+      if (order.msgStop == false) {
+        order.msgStop = true;
+        TxMsgMoveStop(addressSr[toNmbr]);
+      }
     }
   }
 } // end of Thrown()
-
 /*
 
    function : move servo into straight position
@@ -257,23 +260,25 @@ byte Thrown(byte toNmbr) {
 
 */
 byte Straight(byte toNmbr) {
-  currentPosition[toNmbr] = servo[toNmbr].read();
-  if ((currentPosition[toNmbr]) != (servoPos[toNmbr][0]) && millis() >= servoMoveTime[toNmbr]) {
-    if (inverted[toNmbr] == true) {
-      servo[toNmbr].write((currentPosition[toNmbr]) + 1);
-    } else servo[toNmbr].write((currentPosition[toNmbr]) - 1);
-    servoMoveTime[toNmbr] = millis() + servoDelay[toNmbr];
-    if (order.msgMove == false) {
-      order.msgMove = true;
-      TxMsgMove(addressSr[toNmbr]);
+  if (toNmbr != 255) {
+    currentPosition[toNmbr] = servo[toNmbr].read();
+    if ((currentPosition[toNmbr]) != (servoPos[toNmbr][0]) && millis() >= servoMoveTime[toNmbr]) {
+      if (inverted[toNmbr] == true) {
+        servo[toNmbr].write((currentPosition[toNmbr]) + 1);
+      } else servo[toNmbr].write((currentPosition[toNmbr]) - 1);
+      servoMoveTime[toNmbr] = millis() + servoDelay[toNmbr];
+      if (order.msgMove == false) {
+        order.msgMove = true;
+        TxMsgMove(addressSr[toNmbr]);
+      }
+      if ((currentPosition[toNmbr]) == (relaisSwitchPoint[toNmbr])) digitalWrite(relais[toNmbr], LOW);
     }
-    if ((currentPosition[toNmbr]) == (relaisSwitchPoint[toNmbr])) digitalWrite(relais[toNmbr], LOW);
-  }
-  if ((currentPosition[toNmbr]) == (servoPos[toNmbr][0])) {
-    order.executed = true;
-    if (order.msgStop == false) {
-      order.msgStop = true;
-      TxMsgMoveStop(addressSr[toNmbr]);
+    if ((currentPosition[toNmbr]) == (servoPos[toNmbr][0])) {
+      order.executed = true;
+      if (order.msgStop == false) {
+        order.msgStop = true;
+        TxMsgMoveStop(addressSr[toNmbr]);
+      }
     }
   }
 } // end of Straight()

@@ -1,5 +1,12 @@
 /*
  * 
+   changelog: 2018-04-02
+   "fault publishing" displayed only once
+   prevented angle "255" being processed by servo
+   
+   changelog: 2018-02-15
+   accepting chage of debug flag and wifi flag fixed
+   
   changelog: 
   "2018-02-14"
   changelog: added FTP server from https://github.com/nailbuster/esp8266FTPServer
