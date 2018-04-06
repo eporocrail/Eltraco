@@ -1,5 +1,8 @@
 /*
- * 
+
+  changelog: 2018-04-06
+  Hall sensors reporting period of 300 millis incorporated
+
    changelog: 2018-04-02
    "fault publishing" displayed only once
    prevented angle "255" being processed by servo

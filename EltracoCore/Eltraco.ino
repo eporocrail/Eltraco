@@ -51,27 +51,53 @@ void loop() {
   server.handleClient();                        // run the web server
   ftpSrv.handleFTP();                            // handle for FTP
   StartUp();
-  switch (decoderType) {
-    case 0:                   // double turnout
-      CheckBuffer();
-      ProcessOrderTurnout();
-      ScanSensor();
+
+  switch (control) {
+    case 0:
+      switch (decoderType) {
+        case 0:                   // double turnout
+          CheckBuffer();
+          ProcessOrderTurnout();
+          ScanSensor();
+          break;
+        case 1:                   // single turnout
+          CheckBuffer();
+          ProcessOrderTurnout();
+          ScanSensor();
+          break;
+        case 2:                   // switch
+          ProcessOrderSwitch();
+          break;
+        case 3:                   // sensor
+          ScanSensor();
+          break;
+        default:
+          PrintDefault("Should not happen - Loop");
+          break;
+      }
+
       break;
-    case 1:                   // single turnout
-      CheckBuffer();
-      ProcessOrderTurnout();
-      ScanSensor();
-      break;
-    case 2:                   // switch
-      ProcessOrderSwitch();
-      break;
-    case 3:                   // sensor
-      ScanSensor();
-      break;
-    default:
-      PrintDefault("Should not happen - Loop");
+    case 1:
+      if (sensorStatus[sensorScan] == true){
+        FixedFields();
+        msgOut[10] = sensorStatus[sensorScan];
+        msgOut[11] = addressSr[sensorScan];
+        sendMsg = true;
+        control = 0;
+      }
+      if (sensorStatus[sensorScan] == false) {
+        if (millis() - scanTimer > scanPulse) {
+          FixedFields();
+          msgOut[10] = sensorStatus[sensorScan];
+          msgOut[11] = addressSr[sensorScan];
+          sendMsg = true;
+          control = 0;
+        }
+      }
       break;
   }
+
+
   if (!client.connected()) {                    // maintain connection with Mosquitto
     Reconnect();
   }
@@ -208,10 +234,9 @@ void ScanSensor() {
         sensorStatus[index] = false;
       }
       if ((sensorStatusOld[index]) != (sensorStatus[index])) {
-        sendMsg = true;
-        FixedFields();
-        msgOut[10] = sensorStatus[index];
-        msgOut[11] = addressSr[index];
+        sensorScan=index;
+        scanTimer = millis();
+        control = 1;
       }
     }
   }

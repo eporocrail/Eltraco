@@ -13,8 +13,7 @@ static boolean debugFlag = true;                 // display debug messages
 
 static boolean connectedMosquitto=true;
 
-static String version = "2018-04-03";                     // software version
-
+static String version = "2018-04-06";                     // software version
 char ClientName[80];
 
 static byte servoPin[2];                      // servo pin number
@@ -39,6 +38,10 @@ static boolean sensorInverted[8];
 static boolean scan = false;                                             // sensorvalue
 static const byte scanDelay = 5;                                         // delay in sensor scan processing
 static const byte scanNegativeNr = 15;                                   // number of negative scan values for negative sensorstatus
+static byte control=0;
+static long scanTimer=millis();
+static byte scanPulse=300;                                          // duration of positive sensor message
+static byte sensorScan=0;
 
 static String(turnoutOrder) = "";                                        // used with debugging
 static unsigned int relaisSwitchPoint[8];                           // relais switch start time
