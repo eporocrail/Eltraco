@@ -332,17 +332,17 @@ Allocation of EEPROM memory to variables has to be planned.
       0    AngleA1
       1    AngleB1
       2    Delay1
-      3 .  Swap1
+      3    Swap1
       4    AngleA2
       5    AngleB2
       6    Delay2
-      7 .  Swap2
+      7    Swap2
       8    decoderType
       9    debugFlag
 
   GENERALOFFSET+ 0 .. 25 ST WiFi SSID
   GENERALOFFSET + SSIDOFFSET + 0 .. 8 ST WiFi Password
-  GENERALOFFSET + SSIDOFFSET + PWDOFFSET `+ 0 .. 6 ST WiFi IP address triplets
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + 0 .. 6 ST WiFi IP address triplets
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + 0 .. 8 Output puls 
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + 0 .. 8 Switch active puls length 
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + PULSLENGTHOFFSET+ 0 .. 8 Output sensor message
