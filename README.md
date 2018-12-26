@@ -341,12 +341,16 @@ Allocation of EEPROM memory to variables has to be planned.
       9    debugFlag
 
   GENERALOFFSET+ 0 .. 25 ST WiFi SSID
+  
   GENERALOFFSET + SSIDOFFSET + 0 .. 8 ST WiFi Password
+  
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + 0 .. 6 ST WiFi IP address triplets
+  
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + 0 .. 8 Output puls 
-  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + 0 .. 8 Switch active puls length 
+  
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + 0 .. 8 Switch active puls length
+  
   GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + PULSLENGTHOFFSET+ 0 .. 8 Output sensor message
-  TOTALOFFSET 
 
   GENERALOFFSET      - 20
   SSIDOFFSET         - 30
