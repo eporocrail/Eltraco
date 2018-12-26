@@ -238,133 +238,134 @@
   Each decoder is allocated a unique IP-address out of the range 192.168.xxx.2 - 192.168.2.250.
   The last triplet is the Rocrail "Bus" number.
 
-  Double turnout decoder:
-
-  Each decoder controls 2 turnouts and reports occupation of them.
-
-  For the turnout decoder occupation of the first turnout is reported at "Address" 1 and of the second
-  turnout at "Address" 2.
-
-  Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
-         For the first turnout "1" is inserted into field "Address". For the second one "2" is inserted
-         e.g. (192.168.0.154 turnout 2 is inserted as Bus 154 Address 2)
-
-  Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
-         For the first turnout "1" is inserted into field "Address". For the second one "2" is inserted
-         e.g. (192.168.0.154 turnout 2 is inserted as Bus 154 Address 2)
-
   Single turnout decoder:
 
-  Each decoder controls 1 turnout and reports occupation of it.
+Each decoder controls 1 turnout and reports occupation of it.
 
-  For the turnout decoder occupation of the turnout is reported at "Address" 1.
+For the turnout decoder occupation of the turnout is reported at "Address" 1.
 
-  Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
-         "1" is inserted into field "Address".
-         e.g. (192.168.0.154 turnout is inserted as Bus 154 Address 1)
+Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
+       "1" is inserted into field "Address".
+       e.g. (192.168.0.154 turnout is inserted as Bus 154 Address 1)
 
-  Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
-         "1" is inserted into field "Address". The external sensors report using "Address" numbers 2 .. 5.
-         e.g. (192.168.0.154 turnout is inserted as Bus 154 Address 1, the second external sensor of the same
-         decoder is inserted as Bus 154 Address 3)
+Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
+       "1" is inserted into field "Address". The external sensors report using "Address" numbers 2 .. 5.
+       e.g. (192.168.0.154 turnout is inserted as Bus 154 Address 1, the second external sensor of the same
+       decoder is inserted as Bus 154 Address 3)
 
-  Sensor decoder:
-  Each decoder has eight digital and one analogue sensor.
+Double turnout decoder:
 
-  Each decoder is allocated a unique IP-address out of the range 192.168.xxx.2 - 192.168.2.250.
-  The last triplet is the Rocrail "Bus" number.
+Each decoder controls 2 turnouts and reports occupation of them.
 
-  The sensors report using "Address" numbers 1 .. 9.
+For the turnout decoder occupation of the first turnout is reported at "Address" 1 and of the second
+turnout at "Address" 2.
 
-  Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
-  
-         port number is inserted into field "Address"
-         
-         e.g. (192.168.0.076 sensor 5 is inserted as Bus 76 Address 5)
-         
+Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
+       For the first turnout "1" is inserted into field "Address". For the second one "2" is inserted
+       e.g. (192.168.0.154 turnout 2 is inserted as Bus 154 Address 2)
 
-  Output decoder
-  Each decoder has eight outputs.
+Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
+       For the first turnout "1" is inserted into field "Address". For the second one "2" is inserted
+       e.g. (192.168.0.154 turnout 2 is inserted as Bus 154 Address 2)
 
-  Each decoder is allocated a unique IP-address out of the range 192.168.xxx.2 - 192.168.2.250.
-  The last triplet is the Rocrail "Bus" number.
+Operation
 
-  The outputs are switched using "Address" numbers 1 .. 8.
+During testing it turned out that move orders from Rocrail arrived so fast that an ongoing movement was
+interrupted. To cater for this, incoming turnout orders are stored into a buffer. When ongoing movement is concluded,
+buffer content is converted into a turnout order and the next turnout starts moving.
 
-  Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
-  
-         The individual port number is inserted into field "Address"
-         
-         e.g. (192.168.0.201 port 3 is inserted as Bus 201 Address 3)
-         
+Sensor decoder:
+Each decoder has eight digital and one analogue sensor.
 
-  During testing it turned out that move orders from Rocrail arived so fast that an ongoing movement was
-  interrupted. To cater for this incoming turnout orders are stored into a buffer. When ongoing movement is concluded,
-  buffer is converted into turnout an order and the second turnout starts moving.
+The sensors report using "Address" numbers 1 .. 9.
+Use of the analogue sensor is to be programmed by the user.
 
+Table: Sensor tab Interface - the last part of the IP-address is inserted into field "Bus"
+       port number is inserted into field "Address"
+       e.g. (192.168.0.076 sensor 5 is inserted as Bus 76 Address 5)
 
-  Data exchange between webinterface and decoder.
-  The configuration data have to be transmitted between user web page in browser and the decoder.
-  Normally PHP is used on the server. With ESP8233 this is not possible.
-  Websockets is the protocol to transmit data.
-  The datastructure used is:
+Operation
 
-  the use of characters is:
-  position 0:       # to designate "no servo angle data"
-  position 1 and 2: group
-  position 3:       member
-  position 4 .. 6   data
+The state of the sensor is controlled by interrupt. Not only the state of the sensor but also the point in time of activation is stored.
+If the sensor is still in the activated state after the debounce period has passed the Sensor Message is sent. 
+The state of the sensor will change to "inactive" by interrupt. After the minimum activation time has passed this inactive state is signalled 
+with a Sensor Message.
 
-  group:
-  0 - IP-address
-  1 - decoder type
-  2 - flag
+Interrupt reacts on changes to drive the sensor state.
 
-  member:
-  group IP-address:   0 - decoder
-                      1 - gateway
-                      2 - mosquitto
+D0 can NOT be used with Interrupt. This reduces the amount of interrupt driven sensors per module to 7. (D1 .. D7).
 
-        decoder type: 0 - double trunout
-                      1 - single turnout
-                      2 - switch
-                      3 - sensor
+D0 has to be watched with "polling".
 
-        flag:         0 - new Wifi network
-                      1 - debug
+Switch decoder
+Each decoder has eight outputs.
 
-  data:               position
-  group IP-address:   4 . . 6 characters
-        decoder type: 4       1 character  
-        flag          4       1 character (0=off, 1=on)
+Each decoder is allocated a unique IP-address out of the range 192.168.xxx.2 - 192.168.2.250.
+The last triplet is the Rocrail "Bus" number.
 
-  Configuration data and servo angles are stored in EEPROM.
-  Allocation of EEPROM memory to variables has to be planned.
+The outputs are switched using "Address" numbers 1 .. 8.
+
+Table: Switches tab Interface - the last part of the IP-address is inserted into field "Bus"
+       The individual port number is inserted into field "Address"
+       e.g. (192.168.0.201 port 3 is inserted as Bus 201 Address 3)
+
+Operation
+
+Via configuration it is possible to have an output switched ON during 200 mSec. An additional relais attached to that
+output can be used to control a solenoid activated device.
+
+To signal the state of a switch, a sensor message is transmitted after each switch action. 
+
+Configuration of decoder
+
+The Wemos module can be used in "ST" mode and "AP" mode simultaneously.
+In "ST" mode it is possible to login onto an existing WiFi network for normal operations.
+In "AP" mode it is possible to generate its own WiFi network. This network is used for configuration of the decoder.
+Each module has its own configuration webserver on a shared WiFi configuration network with its own IP address.
+
+The websever is based on the "EmbAJAX" library. This library facilitates dataexchange between webserver on the decoder
+and a browser on a client. The user experience is as much as possible comparable with webservers on PC like hardware.
+
+Configuration data and servo angles are stored in EEPROM.
+Allocation of EEPROM memory to variables has to be planned.
   location variable
-      0    servoPos[0][0]
-      1    servoPos[0][1]
-      2    servoPos[1][0]
-      3    servoPos[1][1]
-      4    ipMosquitto[3]
-      5    ipDecoder[3]
-      6    ipGateway[3]
-      7    decoderType
-      8    debugFlag
+      0    AngleA1
+      1    AngleB1
+      2    Delay1
+      3 .  Swap1
+      4    AngleA2
+      5    AngleB2
+      6    Delay2
+      7 .  Swap2
+      8    decoderType
+      9    debugFlag
 
-  Only one variable is stored in SPIFFS
-      In file " wifi.txt" resetWifi is stored. (being "0" or "1")
+  GENERALOFFSET+ 0 .. 25 ST WiFi SSID
+  GENERALOFFSET + SSIDOFFSET + 0 .. 8 ST WiFi Password
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET `+ 0 .. 6 ST WiFi IP address triplets
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + 0 .. 8 Output puls 
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + 0 .. 8 Switch active puls length 
+  GENERALOFFSET + SSIDOFFSET + PWDOFFSET + IPOFFSET + OUTPUTOFFSET + PULSLENGTHOFFSET+ 0 .. 8 Output sensor message
+  TOTALOFFSET 
 
-  With configuration data outside the software it is possible to introduce mistakes.
-  The most severe mishap would be to lock oneselves out from access to the WiFi manager.
-  To provide an escape when this should occur, the "resetWifi" variable is not stored 
-  in EEPROM but in SPIFFS. The advantage is that information in SPIFFS can be accessed
-  by simply uploading a new file.
-  Would the variable be in EEPROM than a new software upload would be required.
+  GENERALOFFSET      - 20
+  SSIDOFFSET         - 30
+  PWDOFFSET          - 20
+  IPOFFSET           - 10
+  OUTPUTOFFSET        -10
+  PULSLENGTHOFFSET    -20
+  OUTPUTSENSOROFFSET  -10
 
-  The rest of the variables stay in EEPROM because EEPROM is a random access memory while
-  ISPFFS is serial access memory.
-  
+The ST WiFi password is generated out of "ELTRACO" and the decoderId.
+The AP WiFi SSID is generated out of "ELTRACO" and the decoderID. This also aplies to the related password.
 
-  Author: E. Postma
+There are two ways to transfer Software to the decoder.
+Via USB cable and after inital software installation also "Over The Air"(OTA).
+Each decoder has its own OTA name which is generated outof "ELTRACO" and the decoderId.
 
-  February 2018
+
+Author: E. Postma
+
+November 2018
+
+
